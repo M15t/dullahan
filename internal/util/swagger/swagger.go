@@ -6,7 +6,7 @@ import (
 )
 
 // ListRequest holds data of listing request for swagger
-// swagger:parameters
+// swagger:parameters adminSessionList
 type ListRequest struct {
 	httputil.ListRequest
 }

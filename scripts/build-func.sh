@@ -3,7 +3,7 @@
 set -e
 now=$(date +'%Y-%m-%dT%T%z')
 version=$(git rev-parse --short HEAD)
-package="go-sample/pkg/server"
+package="dullahan/pkg/server"
 
 for i in /functions
 do

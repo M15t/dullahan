@@ -71,7 +71,7 @@ specs: ## Generate swagger specs
 deployfunc:  ## Deploy functions to DEV environment with serverless
 	sh scripts/sls-funcs.sh dev deploy
 
-migrate: dev.deployfunc ## Run database migrations on DEV environment
+migrate: deployfunc ## Run database migrations on DEV environment
 	sh scripts/sls-funcs.sh dev invoke --function Migration
 
 deploy:  ## Deploy to DEV environment with serverless

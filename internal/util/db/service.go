@@ -27,7 +27,7 @@ func New(dbPsn string, enableLog bool) (*gorm.DB, error) {
 	config := new(gorm.Config)
 
 	namingStrategy := schema.NamingStrategy{
-		SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
+		// SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
 	}
 
 	newLogger := logger.New(

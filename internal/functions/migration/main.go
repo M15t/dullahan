@@ -16,9 +16,17 @@ import (
 // var defaultTableOpts = "ENGINE=InnoDB ROW_FORMAT=DYNAMIC"
 var defaultTableOpts = ""
 
-// Base represents base columns for all tables. Do not use gorm.Model because of uint ID
+// Base represents base columns for all tables
+// Do not use gorm.Model because of uint ID
 type Base struct {
-	ID        int `gorm:"primary_key"`
+	ID        int64 `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// BaseWithoutID represents base columns for all tables that without ID included
+// Do not use gorm.Model because of uint ID
+type BaseWithoutID struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -58,17 +66,36 @@ func Run() (respErr error) {
 	}
 
 	migration.Run(db, []*gormigrate.Migration{
-		// create initial tables
+		// create initial table(s)
 		{
-			ID: "201905051012",
+			ID: "202305051458",
 			Migrate: func(tx *gorm.DB) error {
 				// it's a good pratice to copy the struct inside the function,
 				// so side effects are prevented if the original struct changes during the time
 
+				type Session struct {
+					Base
+					Code      string `json:"code" gorm:"type:varchar(20);unique_index"`
+					IPAddress string `json:"ip_address" gorm:"type:varchar(45)" `
+					UserAgent string `json:"user_agent" gorm:"type:text"`
+
+					RefreshToken string     `json:"-" gorm:"type:varchar(100);unique_index"`
+					LastLogin    *time.Time `json:"last_login"`
+				}
+
+				// Drop existing table if there is, in case re-apply this migration
+				if err := tx.Migrator().DropTable(&Session{}); err != nil {
+					return err
+				}
+
+				if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&Session{}); err != nil {
+					return err
+				}
+
 				return nil
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Migrator().DropTable("")
+				return tx.Migrator().DropTable("sessions")
 			},
 		},
 	})

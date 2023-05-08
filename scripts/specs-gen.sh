@@ -11,7 +11,7 @@ if [ ! -d "./swaggerui" ]; then
 fi
 
 # Generate swagger.json file
-swagger generate spec --scan-models -w ./cmd/api/ -o ./swaggerui/swagger.json 
+swagger generate spec -m -w ./cmd/api/ -o ./swaggerui/swagger.json
 
 if [[ "$AWS_LAMBDA_FUNCTION_NAME" != "" && "$STAGE" != "" && "$STAGE" != "development" ]]; then
     HOST=$(aws ssm get-parameters --name "/$AWS_LAMBDA_FUNCTION_NAME/$STAGE/host" --with-decryption | jq -r '.Parameters[0].Value')
