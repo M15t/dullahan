@@ -81,21 +81,65 @@ func Run() (respErr error) {
 
 					RefreshToken string     `json:"-" gorm:"type:varchar(100);unique_index"`
 					LastLogin    *time.Time `json:"last_login"`
+
+					TotalIncome              float64 `json:"total_income"`
+					TotalEssentialExpense    float64 `json:"total_essential_expense"`
+					TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
+					MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
+					MonthlyNetFlow           float64 `json:"monthly_net_flow"`
+
+					EmergencyAchieved float64 `json:"emergency_achieved"`
+					RainyFundAchieved float64 `json:"rainy_fund_achieved"`
+					FunFund           float64 `json:"fun_fund"`
+					Investment        float64 `json:"investment"`
+					CurrentRetirement float64 `json:"current_retirement"`
+
+					Status string `json:"status" gorm:"type:varchar(10)"`
+				}
+
+				type Income struct {
+					Base
+					SessionID int64   `json:"session_id"`
+					Amount    float64 `json:"amount"`
+					Name      string  `json:"name" gorm:"type:varchar(100)"`
+					Type      string  `json:"type" gorm:"type:varchar(10);default:MONTHLY"` // MONTHLY, PASSIVE
+				}
+
+				type Expense struct {
+					Base
+					SessionID int64   `json:"session_id"`
+					Amount    float64 `json:"amount"`
+					Name      string  `json:"name" gorm:"type:varchar(100)"`
+					Type      string  `json:"type" gorm:"type:varchar(15);default:ESSENTIAL"` // ESSENTIAL, NON_ESSENTIAL
+				}
+
+				type Debt struct {
+					Base
+					SessionID       int64     `json:"session_id"`
+					Name            string    `json:"name" gorm:"type:varchar(50)"`
+					RemainingAmount float64   `json:"remaining_amount"`
+					MonthlyPayment  float64   `json:"monthly_payment"`
+					AnnualInterest  float64   `json:"annual_interest"`
+					Type            string    `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
+					PaymentDeadline time.Time `json:"payment_deadline"`
+
+					DebtPaidOffEachMonth     float64 `json:"debt_paid_off_each_month"`
+					InterestPaidOffEachMonth float64 `json:"interest_paid_off_each_month"`
 				}
 
 				// Drop existing table if there is, in case re-apply this migration
-				if err := tx.Migrator().DropTable(&Session{}); err != nil {
+				if err := tx.Migrator().DropTable(&Session{}, &Income{}, &Expense{}, &Debt{}); err != nil {
 					return err
 				}
 
-				if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&Session{}); err != nil {
+				if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&Session{}, &Income{}, &Expense{}, &Debt{}); err != nil {
 					return err
 				}
 
 				return nil
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Migrator().DropTable("sessions")
+				return tx.Migrator().DropTable("sessions", "incomes", "expenses", "debts")
 			},
 		},
 	})

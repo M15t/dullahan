@@ -4,7 +4,9 @@ import (
 	"dullahan/config"
 
 	"dullahan/internal/api/v1/auth"
+	"dullahan/internal/api/v1/customer/income"
 	"dullahan/internal/db"
+	"dullahan/internal/rbac"
 	"dullahan/internal/util/crypter"
 	dbutil "dullahan/internal/util/db"
 
@@ -26,7 +28,7 @@ func main() {
 	sqlDB, err := gdb.DB()
 	defer sqlDB.Close()
 
-	// Initialize HTTP server
+	// * Initialize HTTP server
 	e := server.New(&server.Config{
 		Stage:        cfg.Stage,
 		Port:         cfg.Port,
@@ -36,26 +38,30 @@ func main() {
 		Debug:        cfg.Debug,
 	})
 
-	// Static page for Swagger API specs
+	// * Static page for Swagger API specs
 	e.Static("/swaggerui", "swaggerui")
 
-	// Initialize services
+	// * Initialize services
 	dbSvc := db.New(gdb)
-	// rbacSvc := rbac.New(cfg.Debug)
+	rbacSvc := rbac.New(cfg.Debug)
 	crypterSvc := crypter.New()
 	jwtSvc := jwt.New(cfg.JwtAlgorithm, cfg.JwtSecret, cfg.JwtDuration)
 
 	authSvc := auth.New(dbSvc, jwtSvc, crypterSvc, cfg)
 
-	// sessionSvc := session.New(dbSvc, rbacSvc)
+	incomeSvc := income.New(dbSvc, rbacSvc, crypterSvc)
 
-	// Initialize v1 API
+	// * Initialize v1 API
 	v1Router := e.Group("/v1")
 
-	// Initialize auth API
+	// * Initialize auth API
 	auth.NewHTTP(authSvc, v1Router)
 
-	// session.NewHTTP(sessionSvc, authSvc, adminRouter.Group("/session"))
+	// * Load jwt middleware
+	v1cRouter := v1Router.Group("/customer")
+	v1cRouter.Use(jwtSvc.MWFunc())
+
+	income.NewHTTP(incomeSvc, authSvc, v1cRouter.Group("/income"))
 
 	// Start the HTTP server
 	server.Start(e, cfg.Stage == "development")

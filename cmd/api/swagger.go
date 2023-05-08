@@ -1,6 +1,6 @@
 // Dullahan - Calculating personal finance
 //
-// # API documents for Dullahan project
+// # API documents for project
 //
 // `Believe that you are worthy of financial freedom. Do something you love and then all you ever have to do is be yourself to succeed - Jen Sincero.`
 //
@@ -13,24 +13,24 @@
 //
 // Terms Of Service: N/A
 //
-//     Host: %{HOST}
-//     Version: 1.0.0
-//     Contact: Nguyen Nguyen <khanhnguyen1411@gmail.com>
+// Host: %{HOST}
+// Version: 1.0.0
+// Contact: Nguyen Nguyen <khanhnguyen1411@gmail.com>
 //
-//     Consumes:
-//     - application/json
+// Consumes:
+// - application/json
 //
-//     Produces:
-//     - application/json
+// Produces:
+// - application/json
 //
-//     Security:
-//     - bearer: []
+// Security:
+// - bearer: []
 //
-//     SecurityDefinitions:
-//     bearer:
-//          type: apiKey
-//          name: Authorization
-//          in: header
+// SecurityDefinitions:
+// bearer:
+//   type: apiKey
+//   name: Authorization
+//   in: header
 //
 // swagger:meta
 package main

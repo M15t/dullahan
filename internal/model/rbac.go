@@ -13,6 +13,9 @@ const (
 const (
 	ObjectAny     = "*"
 	ObjectSession = "session"
+	ObjectIncome  = "income"
+	ObjectExpense = "expense"
+	ObjectDebt    = "debt"
 )
 
 // RBAC actions

@@ -18,8 +18,8 @@ type AuthAdmin struct {
 	Role string
 }
 
-// AuthSession represents data stored in JWT token for session
-type AuthSession struct {
+// AuthCustomer represents data stored in JWT token for customer
+type AuthCustomer struct {
 	ID   int64
 	Code string
 	Role string
@@ -28,4 +28,5 @@ type AuthSession struct {
 // Auth represents auth interface
 type Auth interface {
 	Admin(echo.Context) *AuthAdmin
+	Customer(echo.Context) *AuthCustomer
 }

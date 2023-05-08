@@ -60,13 +60,13 @@ func (s *Auth) RefreshToken(c echo.Context, data RefreshTokenData) (*model.AuthT
 	return s.LoginSession(session)
 }
 
-// Session returns session data stored in jwt token
-func (s *Auth) Session(c echo.Context) *model.AuthSession {
+// Customer returns customer data stored in jwt token
+func (s *Auth) Customer(c echo.Context) *model.AuthCustomer {
 	id, _ := c.Get("id").(float64)
 	code, _ := c.Get("code").(string)
 	role, _ := c.Get("role").(string)
 
-	return &model.AuthSession{
+	return &model.AuthCustomer{
 		ID:   int64(id),
 		Code: code,
 		Role: role,
