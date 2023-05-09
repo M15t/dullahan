@@ -20,9 +20,9 @@ type AuthAdmin struct {
 
 // AuthCustomer represents data stored in JWT token for customer
 type AuthCustomer struct {
-	ID   int64
-	Code string
-	Role string
+	SessionID int64
+	Code      string
+	Role      string
 }
 
 // Auth represents auth interface

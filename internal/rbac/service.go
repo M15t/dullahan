@@ -15,12 +15,15 @@ func New(enableLog bool) *rbac.RBAC {
 
 	r.AddPolicy(model.RoleCustomer, model.ObjectIncome, model.ActionCreate)
 	r.AddPolicy(model.RoleCustomer, model.ObjectIncome, model.ActionUpdate)
+	r.AddPolicy(model.RoleCustomer, model.ObjectIncome, model.ActionDelete)
 
 	r.AddPolicy(model.RoleCustomer, model.ObjectExpense, model.ActionCreate)
 	r.AddPolicy(model.RoleCustomer, model.ObjectExpense, model.ActionUpdate)
+	r.AddPolicy(model.RoleCustomer, model.ObjectExpense, model.ActionDelete)
 
 	r.AddPolicy(model.RoleCustomer, model.ObjectDebt, model.ActionCreate)
 	r.AddPolicy(model.RoleCustomer, model.ObjectDebt, model.ActionUpdate)
+	r.AddPolicy(model.RoleCustomer, model.ObjectDebt, model.ActionDelete)
 
 	// Add permission for admin role
 	r.AddPolicy(model.RoleAdmin, model.ObjectAny, model.ActionAny)

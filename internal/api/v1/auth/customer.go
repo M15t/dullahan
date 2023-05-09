@@ -11,7 +11,7 @@ import (
 // LoginSession logs in the given session, returns access token
 func (s *Auth) LoginSession(session *model.Session) (*model.AuthToken, error) {
 	claims := map[string]interface{}{
-		"id":   session.ID,
+		"sid":  session.ID,
 		"code": session.Code,
 		"role": model.RoleCustomer,
 	}
@@ -62,13 +62,13 @@ func (s *Auth) RefreshToken(c echo.Context, data RefreshTokenData) (*model.AuthT
 
 // Customer returns customer data stored in jwt token
 func (s *Auth) Customer(c echo.Context) *model.AuthCustomer {
-	id, _ := c.Get("id").(float64)
+	sid, _ := c.Get("sid").(float64)
 	code, _ := c.Get("code").(string)
 	role, _ := c.Get("role").(string)
 
 	return &model.AuthCustomer{
-		ID:   int64(id),
-		Code: code,
-		Role: role,
+		SessionID: int64(sid),
+		Code:      code,
+		Role:      role,
 	}
 }

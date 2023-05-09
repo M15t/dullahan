@@ -26,6 +26,10 @@ type Session struct {
 	CurrentRetirement float64 `json:"current_retirement"`
 
 	Status string `json:"status" gorm:"type:varchar(10)"`
+
+	Incomes  []*Income  `json:"incomes,omitempty"`
+	Expenses []*Expense `json:"expenses,omitempty"`
+	Debts    []*Debt    `json:"debts,omitempty"`
 }
 
 // Custom status
