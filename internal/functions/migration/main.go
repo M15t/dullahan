@@ -82,7 +82,7 @@ func Run() (respErr error) {
 					RefreshToken string     `json:"-" gorm:"type:varchar(100);unique_index"`
 					LastLogin    *time.Time `json:"last_login"`
 
-					TotalIncome              float64 `json:"total_income"`
+					TotalAllIncome           float64 `json:"total_all_income"`
 					TotalEssentialExpense    float64 `json:"total_essential_expense"`
 					TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
 					MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
@@ -142,14 +142,14 @@ func Run() (respErr error) {
 				return tx.Migrator().DropTable("sessions", "incomes", "expenses", "debts")
 			},
 		},
-		// add column "total_expense" to sessions table
+		// add column "total_all_expense" to sessions table
 		{
 			ID: "202305101555",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_expense DOUBLE DEFAULT 0 AFTER total_income;`).Error
+				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_all_expense DOUBLE DEFAULT 0 AFTER total_all_income;`).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_expense;`).Error
+				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_all_expense;`).Error
 			},
 		},
 	})

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Session represents the session model
 // swagger:model
@@ -13,8 +17,8 @@ type Session struct {
 	RefreshToken string     `json:"-" gorm:"type:varchar(100);unique_index"`
 	LastLogin    *time.Time `json:"last_login"`
 
-	TotalIncome              float64 `json:"total_income"`
-	TotalExpense             float64 `json:"total_expense"`
+	TotalAllIncome           float64 `json:"total_all_income"`
+	TotalAllExpense          float64 `json:"total_all_expense"`
 	TotalEssentialExpense    float64 `json:"total_essential_expense"`
 	TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
 	MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
@@ -31,6 +35,18 @@ type Session struct {
 	Incomes  []*Income  `json:"incomes,omitempty"`
 	Expenses []*Expense `json:"expenses,omitempty"`
 	Debts    []*Debt    `json:"debts,omitempty"`
+}
+
+// AfterSave to run after save
+func (s *Session) AfterSave(tx *gorm.DB) (err error) {
+	// do something here
+	return
+}
+
+// AfterUpdate to run after update
+func (s *Session) AfterUpdate(tx *gorm.DB) (err error) {
+	// do something here
+	return
 }
 
 // Custom status
