@@ -16,6 +16,7 @@ type HTTP struct {
 // Service represents auth service interface
 type Service interface {
 	Start(echo.Context) (*model.AuthToken, error)
+	Resume(c echo.Context, data CredentialData) (*model.AuthToken, error)
 	RefreshToken(c echo.Context, data RefreshTokenData) (*model.AuthToken, error)
 }
 
@@ -34,6 +35,25 @@ func NewHTTP(svc Service, eg *echo.Group) {
 	//   "500":
 	//     "$ref": "#/responses/errDetails"
 	eg.POST("/start", h.start)
+
+	// swagger:operation POST /v1/resume auth authResume
+	// ---
+	// summary: Resume a session
+	// parameters:
+	// - name: request
+	//   in: body
+	//   description: Request body
+	//   required: true
+	//   schema:
+	//     "$ref": "#/definitions/CredentialData"
+	// responses:
+	//   "200":
+	//     description: Access token
+	//     schema:
+	//       "$ref": "#/definitions/AuthToken"
+	//   "500":
+	//     "$ref": "#/responses/errDetails"
+	eg.POST("/resume", h.resume)
 
 	// swagger:operation POST /v1/refresh-token auth authRefreshToken
 	// ---
@@ -63,8 +83,27 @@ type RefreshTokenData struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
+// CredentialData represents refresh token request data
+// swagger:model
+type CredentialData struct {
+	SessionCode string `json:"session_code" validate:"required"`
+}
+
 func (h *HTTP) start(c echo.Context) error {
 	resp, err := h.svc.Start(c)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *HTTP) resume(c echo.Context) error {
+	r := CredentialData{}
+	if err := c.Bind(&r); err != nil {
+		return err
+	}
+	resp, err := h.svc.Resume(c, r)
 	if err != nil {
 		return err
 	}

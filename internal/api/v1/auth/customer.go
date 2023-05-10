@@ -30,7 +30,7 @@ func (s *Auth) LoginSession(session *model.Session) (*model.AuthToken, error) {
 
 }
 
-// Start start new session
+// Start starts new session
 func (s *Auth) Start(c echo.Context) (*model.AuthToken, error) {
 	code, err := s.cr.NanoID()
 	if err != nil {
@@ -48,6 +48,16 @@ func (s *Auth) Start(c echo.Context) (*model.AuthToken, error) {
 	}
 
 	return s.LoginSession(newSession)
+}
+
+// Resume resumes a session
+func (s *Auth) Resume(c echo.Context, data CredentialData) (*model.AuthToken, error) {
+	rec := new(model.Session)
+	if err := s.db.Session.View(s.db.GDB, rec, `code = ?`, data.SessionCode); err != nil {
+		return nil, server.NewHTTPInternalError("Error getting session").SetInternal(err)
+	}
+
+	return s.LoginSession(rec)
 }
 
 // RefreshToken returns the new access token with expired time extended

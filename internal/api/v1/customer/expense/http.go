@@ -1,4 +1,4 @@
-package income
+package expense
 
 import (
 	"dullahan/internal/model"
@@ -9,16 +9,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HTTP represents income http service
+// HTTP represents expense http service
 type HTTP struct {
 	svc  Service
 	auth model.Auth
 }
 
-// Service represents income application interface
+// Service represents expense application interface
 type Service interface {
-	Create(c echo.Context, authUsr *model.AuthCustomer, data CreationData) (*model.Income, error)
-	Update(c echo.Context, authUsr *model.AuthCustomer, id int64, data UpdateData) (*model.Income, error)
+	Create(c echo.Context, authUsr *model.AuthCustomer, data CreationData) (*model.Expense, error)
+	Update(c echo.Context, authUsr *model.AuthCustomer, id int64, data UpdateData) (*model.Expense, error)
 	Delete(c echo.Context, authUsr *model.AuthCustomer, id int64) error
 }
 
@@ -26,21 +26,21 @@ type Service interface {
 func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	h := HTTP{svc, auth}
 
-	// swagger:operation POST /v1/customer/income customer-income customerIncomeCreate
+	// swagger:operation POST /v1/customer/expense customer-expense customerExpenseCreate
 	// ---
-	// summary: Creates new income
+	// summary: Creates new expense
 	// parameters:
 	// - name: request
 	//   in: body
 	//   description: Request body
 	//   required: true
 	//   schema:
-	//     "$ref": "#/definitions/CustomerIncomeCreationData"
+	//     "$ref": "#/definitions/CustomerExpenseCreationData"
 	// responses:
 	//   "200":
-	//     description: The new income
+	//     description: The new expense
 	//     schema:
-	//       "$ref": "#/definitions/Income"
+	//       "$ref": "#/definitions/Expense"
 	//   "400":
 	//     "$ref": "#/responses/errDetails"
 	//   "401":
@@ -51,13 +51,13 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.POST("", h.create)
 
-	// swagger:operation PATCH /v1/customer/income/{id} customer-income customerIncomeUpdate
+	// swagger:operation PATCH /v1/customer/expense/{id} customer-expense customerExpenseUpdate
 	// ---
-	// summary: Update income information
+	// summary: Update expense information
 	// parameters:
 	// - name: id
 	//   in: path
-	//   description: id of income
+	//   description: id of expense
 	//   type: integer
 	//   required: true
 	// - name: request
@@ -65,12 +65,12 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//   description: Request body
 	//   required: true
 	//   schema:
-	//     "$ref": "#/definitions/CustomerIncomeUpdateData"
+	//     "$ref": "#/definitions/CustomerExpenseUpdateData"
 	// responses:
 	//   "200":
-	//     description: The updated income
+	//     description: The updated expense
 	//     schema:
-	//       "$ref": "#/definitions/Income"
+	//       "$ref": "#/definitions/Expense"
 	//   "400":
 	//     "$ref": "#/responses/errDetails"
 	//   "401":
@@ -83,13 +83,13 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.PATCH("/:id", h.update)
 
-	// swagger:operation DELETE /v1/customer/income/{id} customer-income customerIncomeDelete
+	// swagger:operation DELETE /v1/customer/expense/{id} customer-expense customerExpenseDelete
 	// ---
-	// summary: Deletes an income
+	// summary: Deletes an expense
 	// parameters:
 	// - name: id
 	//   in: path
-	//   description: id of income
+	//   description: id of expense
 	//   type: integer
 	//   required: true
 	// responses:
@@ -108,24 +108,24 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	eg.DELETE("/:id", h.delete)
 }
 
-// CreationData contains income data from json request
-// swagger:model CustomerIncomeCreationData
+// CreationData contains expense data from json request
+// swagger:model CustomerExpenseCreationData
 type CreationData struct {
-	// example: Full-Time job earning
+	// example: Housing (Rent)
 	Name string `json:"name" validate:"required,max=100"`
-	// example: MONTHLY
-	Type string `json:"type" validate:"required,oneof=MONTHLY PASSIVE"`
+	// example: ESSENTIAL
+	Type string `json:"type" validate:"required,oneof=ESSENTIAL NON_ESSENTIAL"`
 	// example: 2000
 	Amount float64 `json:"amount" validate:"required,gte=0"`
 }
 
-// UpdateData contains income data from json request
-// swagger:model CustomerIncomeUpdateData
+// UpdateData contains expense data from json request
+// swagger:model CustomerExpenseUpdateData
 type UpdateData struct {
-	// example: Full-Time job earning
+	// example: Housing (Rent)
 	Name *string `json:"name,omitempty" validate:"omitempty,max=100"`
-	// example: MONTHLY
-	Type *string `json:"type,omitempty" validate:"omitempty,oneof=MONTHLY PASSIVE"`
+	// example: ESSENTIAL
+	Type *string `json:"type,omitempty" validate:"omitempty,oneof=ESSENTIAL NON_ESSENTIAL"`
 	// example: 2000
 	Amount *float64 `json:"amount,omitempty" validate:"omitempty,gte=0"`
 }

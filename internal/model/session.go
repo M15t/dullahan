@@ -14,6 +14,7 @@ type Session struct {
 	LastLogin    *time.Time `json:"last_login"`
 
 	TotalIncome              float64 `json:"total_income"`
+	TotalExpense             float64 `json:"total_expense"`
 	TotalEssentialExpense    float64 `json:"total_essential_expense"`
 	TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
 	MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
