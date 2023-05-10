@@ -9,25 +9,18 @@ plugins:
 
 custom:
   host:
-    dev: gz7m5xxajf.execute-api.ap-southeast-1.amazonaws.com/dev/
+    dev: noohydgphd.execute-api.ap-southeast-1.amazonaws.com/dev/
   deploymentBuckets:
     dev: lighthouse-6cvt0sda48
   hooks:
     before:package:initialize:
-      - AWS_REGION=ap-southeast-1 AWS_LAMBDA_FUNCTION_NAME=${self:service} HOST=${self:custom.host.${opt:stage, 'dev'}, ''} make build.linux specs
+      - AWS_REGION=ap-southeast-1 AWS_LAMBDA_FUNCTION_NAME=${self:service} HOST=${self:custom.host.${opt:stage, 'dev'}, ''} make build.arm specs
     after:deploy:finalize:
       - make clean
   prune:
     automatic: true
     includeLayers: true
     number: 3
-
-# customDomain:
-#   certificateName: ${self:custom.certificates.${self:provider.stage}, ''}
-#   domainName: ${self:custom.domains.${self:provider.stage}, ''}
-#   basePath: ""
-#   stage: ${self:provider.stage}
-#   createRoute53Record: true
 
 package:
   patterns:
