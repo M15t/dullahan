@@ -11,3 +11,9 @@ type Expense struct {
 
 	Session *Session `json:"session,omitempty"`
 }
+
+// Custom const
+const (
+	ExpenseTypeEssential    = "ESSENTIAL"
+	ExpenseTypeNonEssential = "NON_ESSENTIAL"
+)

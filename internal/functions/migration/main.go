@@ -142,6 +142,16 @@ func Run() (respErr error) {
 				return tx.Migrator().DropTable("sessions", "incomes", "expenses", "debts")
 			},
 		},
+		// add column "total_expense" to sessions table
+		{
+			ID: "202305101555",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_expense DOUBLE DEFAULT 0 AFTER total_income;`).Error
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_expense;`).Error
+			},
+		},
 	})
 
 	return nil

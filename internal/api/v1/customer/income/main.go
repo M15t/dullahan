@@ -72,12 +72,18 @@ func (s *Income) Delete(c echo.Context, authUsr *model.AuthCustomer, id int64) e
 		return err
 	}
 
+	// * check legit session
 	if existed, err := s.db.Income.Exist(s.db.GDB, `id = ? AND session_id = ?`, id, authUsr.SessionID); err != nil || !existed {
 		return ErrIncomeNotFound.SetInternal(err)
 	}
 
 	if err := s.db.Income.Delete(s.db.GDB, id); err != nil {
 		return server.NewHTTPInternalError("Error deleting purchase").SetInternal(err)
+	}
+
+	// * recalculate total income
+	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
+		return server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
 	return nil
