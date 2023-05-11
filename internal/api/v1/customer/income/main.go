@@ -27,11 +27,6 @@ func (s *Income) Create(c echo.Context, authUsr *model.AuthCustomer, data Creati
 		return nil, server.NewHTTPInternalError("Error creating latefee").SetInternal(err)
 	}
 
-	// * recalcuate total income
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
-	}
-
 	return rec, nil
 }
 
@@ -58,11 +53,6 @@ func (s *Income) Update(c echo.Context, authUsr *model.AuthCustomer, id int64, d
 		return nil, ErrIncomeNotFound.SetInternal(err)
 	}
 
-	// * recalculate total income
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
-	}
-
 	return rec, nil
 }
 
@@ -79,11 +69,6 @@ func (s *Income) Delete(c echo.Context, authUsr *model.AuthCustomer, id int64) e
 
 	if err := s.db.Income.Delete(s.db.GDB, id); err != nil {
 		return server.NewHTTPInternalError("Error deleting purchase").SetInternal(err)
-	}
-
-	// * recalculate total income
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
 	return nil

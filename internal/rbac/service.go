@@ -12,6 +12,7 @@ func New(enableLog bool) *rbac.RBAC {
 
 	// Add permisssion for customer role
 	r.AddPolicy(model.RoleCustomer, model.ObjectSession, model.ActionView)
+	r.AddPolicy(model.RoleCustomer, model.ObjectSession, model.ActionUpdate)
 
 	r.AddPolicy(model.RoleCustomer, model.ObjectIncome, model.ActionCreate)
 	r.AddPolicy(model.RoleCustomer, model.ObjectIncome, model.ActionUpdate)

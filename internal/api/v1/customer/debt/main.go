@@ -35,11 +35,6 @@ func (s *Debt) Create(c echo.Context, authUsr *model.AuthCustomer, data Creation
 		return nil, server.NewHTTPInternalError("Error creating latefee").SetInternal(err)
 	}
 
-	// * recalculate total monthly payment
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
-	}
-
 	return rec, nil
 }
 
@@ -71,11 +66,6 @@ func (s *Debt) Update(c echo.Context, authUsr *model.AuthCustomer, id int64, dat
 		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
-	// * recalculate total monthly payment
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
-	}
-
 	return rec, nil
 }
 
@@ -92,11 +82,6 @@ func (s *Debt) Delete(c echo.Context, authUsr *model.AuthCustomer, id int64) err
 
 	if err := s.db.Debt.Delete(s.db.GDB, id); err != nil {
 		return server.NewHTTPInternalError("Error deleting purchase").SetInternal(err)
-	}
-
-	// * recalculate total monthly payment
-	if err := s.updateCurrentSession(authUsr.SessionID); err != nil {
-		return server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
 	return nil

@@ -90,11 +90,18 @@ func Run() (respErr error) {
 					MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
 					MonthlyNetFlow           float64 `json:"monthly_net_flow"`
 
-					EmergencyAchieved float64 `json:"emergency_achieved"`
-					RainyFundAchieved float64 `json:"rainy_fund_achieved"`
-					FunFund           float64 `json:"fun_fund"`
-					Investment        float64 `json:"investment"`
-					CurrentRetirement float64 `json:"current_retirement"`
+					CurrentBalance float64 `json:"current_balance"`
+
+					EmergencyFund  float64 `json:"emergency_fund"`
+					RainydayFund   float64 `json:"rainyday_fund"`
+					FunFund        float64 `json:"fun_fund"`
+					Investment     float64 `json:"investment"`
+					RetirementPlan float64 `json:"retirement_plan"`
+
+					IsAchivedEmergencyFund  bool `json:"is_achived_emergency_fund"`
+					IsAchivedRainydayFund   bool `json:"is_achived_rainyday_fund"`
+					IsAchivedInvestment     bool `json:"is_achived_investment"`
+					IsAchivedRetirementPlan bool `json:"is_achived_retirement_plan"`
 
 					Status string `json:"status" gorm:"type:varchar(10)"`
 				}

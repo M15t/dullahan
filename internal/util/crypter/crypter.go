@@ -35,7 +35,7 @@ func (*Service) UID() string {
 
 // RoundFloat rounds float64 to 2 decimal places
 func (s *Service) RoundFloat(f float64) float64 {
-	return roundFloat(f)
+	return toFixedFloat(f, 2)
 }
 
 // NanoID return unique string nano ID
@@ -91,6 +91,7 @@ func generateNanoID() (string, error) {
 	return fmt.Sprintf("%s%s", t.Format(DateLayout), generate()), nil
 }
 
-func roundFloat(f float64) float64 {
-	return math.Round(f*100) / 100
+func toFixedFloat(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(int(num*output)) / output
 }

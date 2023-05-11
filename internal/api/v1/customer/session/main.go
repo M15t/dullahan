@@ -4,6 +4,7 @@ import (
 	"dullahan/internal/model"
 
 	"github.com/M15t/ghoul/pkg/rbac"
+	"github.com/M15t/ghoul/pkg/server"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,11 +15,27 @@ func (s *Session) Me(c echo.Context, authUsr *model.AuthCustomer) (*model.Sessio
 	}
 
 	rec := new(model.Session)
-	if err := s.db.Session.View(s.db.GDB.Preload("Incomes").Preload("Expenses"), rec, authUsr.SessionID); err != nil {
+	if err := s.db.Session.View(s.db.GDB.Preload("Incomes").Preload("Expenses").Preload("Debts"), rec, authUsr.SessionID); err != nil {
 		return nil, ErrSessionNotFound.SetInternal(err)
 	}
 
+	// * recalcuate total income, expense, debt and budget cups
+	if err := s.recalculateSession(rec); err != nil {
+		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
+	}
+
 	return rec, nil
+}
+
+// Update updates session information
+func (s *Session) Update(c echo.Context, authUsr *model.AuthCustomer, data UpdateData) error {
+	if err := s.enforce(authUsr, model.ActionUpdate); err != nil {
+		return err
+	}
+
+	return s.db.Session.Update(s.db.GDB, map[string]interface{}{
+		"current_balance": data.CurrentBalance,
+	}, authUsr.SessionID)
 }
 
 // enforce checks Session permission to perform the action

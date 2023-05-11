@@ -115,7 +115,7 @@ type CreationData struct {
 	Name string `json:"name" validate:"required,max=100"`
 	// example: ESSENTIAL
 	Type string `json:"type" validate:"required,oneof=ESSENTIAL NON_ESSENTIAL"`
-	// example: 2000
+	// example: 300
 	Amount float64 `json:"amount" validate:"required,gte=0"`
 }
 
@@ -126,7 +126,7 @@ type UpdateData struct {
 	Name *string `json:"name,omitempty" validate:"omitempty,max=100"`
 	// example: ESSENTIAL
 	Type *string `json:"type,omitempty" validate:"omitempty,oneof=ESSENTIAL NON_ESSENTIAL"`
-	// example: 2000
+	// example: 300
 	Amount *float64 `json:"amount,omitempty" validate:"omitempty,gte=0"`
 }
 

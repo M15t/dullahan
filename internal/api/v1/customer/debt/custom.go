@@ -10,8 +10,3 @@ import (
 var (
 	ErrDebtNotFound = server.NewHTTPError(http.StatusBadRequest, "DEBT_NOTFOUND", "Debt not found")
 )
-
-// Const
-const (
-	BankruptCeil float64 = 200.00
-)
