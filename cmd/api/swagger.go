@@ -5,7 +5,7 @@
 // `Believe that you are worthy of financial freedom. Do something you love and then all you ever have to do is be yourself to succeed - Jen Sincero.`
 //
 // ## Authentication
-// All API endpoints started with version, ex: `/v1/*`, require authentication token.
+// All API endpoints started with version, ex: `/v1/customer/*`, require authentication token.
 // Firstly, grab the **access_token** from the response of `/start`. Then include this header in all API calls:
 // ```
 // Authorization: Bearer ${access_token}

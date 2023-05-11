@@ -2,6 +2,7 @@ package crypter
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jaevor/go-nanoid"
@@ -30,6 +31,11 @@ func (*Service) CompareHashAndPassword(hash, password string) bool {
 // UID returns unique string ID
 func (*Service) UID() string {
 	return UID()
+}
+
+// RoundFloat rounds float64 to 2 decimal places
+func (s *Service) RoundFloat(f float64) float64 {
+	return roundFloat(f)
 }
 
 // NanoID return unique string nano ID
@@ -83,4 +89,8 @@ func generateNanoID() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s%s", t.Format(DateLayout), generate()), nil
+}
+
+func roundFloat(f float64) float64 {
+	return math.Round(f*100) / 100
 }

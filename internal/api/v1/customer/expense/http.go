@@ -26,7 +26,7 @@ type Service interface {
 func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	h := HTTP{svc, auth}
 
-	// swagger:operation POST /v1/customer/expense customer-expense customerExpenseCreate
+	// swagger:operation POST /v1/customer/expenses customer-expenses customerExpenseCreate
 	// ---
 	// summary: Creates new expense
 	// parameters:
@@ -51,7 +51,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.POST("", h.create)
 
-	// swagger:operation PATCH /v1/customer/expense/{id} customer-expense customerExpenseUpdate
+	// swagger:operation PATCH /v1/customer/expenses/{id} customer-expenses customerExpenseUpdate
 	// ---
 	// summary: Update expense information
 	// parameters:
@@ -83,7 +83,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.PATCH("/:id", h.update)
 
-	// swagger:operation DELETE /v1/customer/expense/{id} customer-expense customerExpenseDelete
+	// swagger:operation DELETE /v1/customer/expenses/{id} customer-expenses customerExpenseDelete
 	// ---
 	// summary: Deletes an expense
 	// parameters:

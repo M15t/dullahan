@@ -2,6 +2,7 @@ package migration
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"dullahan/config"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/M15t/ghoul/pkg/util/migration"
 	"github.com/go-gormigrate/gormigrate/v2"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -115,13 +117,13 @@ func Run() (respErr error) {
 
 				type Debt struct {
 					Base
-					SessionID       int64     `json:"session_id"`
-					Name            string    `json:"name" gorm:"type:varchar(50)"`
-					RemainingAmount float64   `json:"remaining_amount"`
-					MonthlyPayment  float64   `json:"monthly_payment"`
-					AnnualInterest  float64   `json:"annual_interest"`
-					Type            string    `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
-					PaymentDeadline time.Time `json:"payment_deadline"`
+					SessionID       int64          `json:"session_id"`
+					Name            string         `json:"name" gorm:"type:varchar(50)"`
+					RemainingAmount float64        `json:"remaining_amount"`
+					MonthlyPayment  float64        `json:"monthly_payment"`
+					AnnualInterest  float64        `json:"annual_interest"`
+					Type            string         `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
+					PaymentDeadline datatypes.Date `json:"payment_deadline"`
 
 					DebtPaidOffEachMonth     float64 `json:"debt_paid_off_each_month"`
 					InterestPaidOffEachMonth float64 `json:"interest_paid_off_each_month"`
@@ -150,6 +152,26 @@ func Run() (respErr error) {
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_all_expense;`).Error
+			},
+		},
+		// add column "total_monthly_payment_debt" to sessions table
+		{
+			ID: "202305111036",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN total_monthly_payment_debt DOUBLE DEFAULT 0 AFTER total_all_expense;`,
+					`ALTER TABLE sessions DROP COLUMN monthly_payment_debt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN monthly_payment_debt DOUBLE DEFAULT 0;`,
+					`ALTER TABLE sessions DROP COLUMN total_monthly_payment_debt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
 			},
 		},
 	})

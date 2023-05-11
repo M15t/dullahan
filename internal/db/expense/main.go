@@ -21,3 +21,8 @@ type DB struct {
 func (d *DB) SumExpenseByType(db *gorm.DB, totaExpense *float64, dataType string, sessionID int64) error {
 	return db.Raw(`SELECT SUM(amount) FROM expenses WHERE session_id = ? AND type = ?`, sessionID, dataType).Scan(totaExpense).Error
 }
+
+// SumExpense get sum expense by session id
+func (d *DB) SumExpense(db *gorm.DB, totaExpense *float64, sessionID int64) error {
+	return db.Raw(`SELECT SUM(amount) FROM expenses WHERE session_id = ?`, sessionID).Scan(totaExpense).Error
+}

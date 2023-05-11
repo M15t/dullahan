@@ -11,6 +11,7 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/segmentio/ksuid v1.0.4
 	golang.org/x/crypto v0.8.0
+	gorm.io/datatypes v1.2.0
 	gorm.io/driver/mysql v1.5.0
 	gorm.io/gorm v1.25.0
 )

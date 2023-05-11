@@ -20,4 +20,5 @@ type Expense struct {
 
 // Crypter represents security interface
 type Crypter interface {
+	RoundFloat(f float64) float64
 }

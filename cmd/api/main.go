@@ -4,6 +4,7 @@ import (
 	"dullahan/config"
 
 	"dullahan/internal/api/v1/auth"
+	"dullahan/internal/api/v1/customer/debt"
 	"dullahan/internal/api/v1/customer/expense"
 	"dullahan/internal/api/v1/customer/income"
 	"dullahan/internal/api/v1/customer/session"
@@ -53,6 +54,7 @@ func main() {
 
 	incomeSvc := income.New(dbSvc, rbacSvc, crypterSvc)
 	expenseSvc := expense.New(dbSvc, rbacSvc, crypterSvc)
+	debtSvc := debt.New(dbSvc, rbacSvc, crypterSvc)
 	sessionSvc := session.New(dbSvc, rbacSvc, crypterSvc)
 
 	// * Initialize v1 API
@@ -65,8 +67,9 @@ func main() {
 	v1cRouter := v1Router.Group("/customer")
 	v1cRouter.Use(jwtSvc.MWFunc())
 
-	income.NewHTTP(incomeSvc, authSvc, v1cRouter.Group("/income"))
-	expense.NewHTTP(expenseSvc, authSvc, v1cRouter.Group("/expense"))
+	income.NewHTTP(incomeSvc, authSvc, v1cRouter.Group("/incomes"))
+	expense.NewHTTP(expenseSvc, authSvc, v1cRouter.Group("/expenses"))
+	debt.NewHTTP(debtSvc, authSvc, v1cRouter.Group("/debts"))
 	session.NewHTTP(sessionSvc, authSvc, v1cRouter.Group("/me"))
 
 	// Start the HTTP server
