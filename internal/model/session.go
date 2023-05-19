@@ -25,12 +25,15 @@ type Session struct {
 	MonthlyNetFlow           float64 `json:"monthly_net_flow"`
 
 	CurrentBalance float64 `json:"current_balance"`
+	NetAssets      float64 `json:"net_assets"`
 
-	EmergencyFund  float64 `json:"emergency_fund"`
-	RainydayFund   float64 `json:"rainyday_fund"`
-	FunFund        float64 `json:"fun_fund"`
-	Investment     float64 `json:"investment"`
-	RetirementPlan float64 `json:"retirement_plan"`
+	ActualEmergencyFund   float64 `json:"actual_emergency_fund"`
+	ExpectedEmergencyFund float64 `json:"expected_emergency_fund"`
+	ActualRainydayFund    float64 `json:"actual_rainyday_fund"`
+	ExpectedRainydayFund  float64 `json:"expected_rainyday_fund"`
+	FunFund               float64 `json:"fun_fund"`
+	Investment            float64 `json:"investment"`
+	RetirementPlan        float64 `json:"retirement_plan"`
 
 	IsAchivedEmergencyFund  bool `json:"is_achived_emergency_fund"`
 	IsAchivedRainydayFund   bool `json:"is_achived_rainyday_fund"`

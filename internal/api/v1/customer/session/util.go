@@ -47,14 +47,31 @@ func (s *Session) recalculateSession(session *model.Session) error {
 
 	monthlyNetFlow := totalIncome - (totalMonthlyPaymentDebt + totalExpense)
 
-	emergencyFund := s.cr.RoundFloat(totalEssentialExpense * EmergencyFundRate)
-	rainydayFund := s.cr.RoundFloat(totalEssentialExpense * RainydayFundRate)
+	netAssets := session.CurrentBalance - totalRemaningDebt
+
+	expectedEmergencyFund := s.cr.RoundFloat(totalEssentialExpense * EmergencyFundRate)
+	expectedRainydayFund := s.cr.RoundFloat(totalEssentialExpense * RainydayFundRate)
+
+	actualEmergencyFund := s.cr.RoundFloat(netAssets)
+	if actualEmergencyFund <= 0 {
+		actualEmergencyFund = 0
+	}
+	actualRainydayFund := s.cr.RoundFloat(netAssets - expectedEmergencyFund)
+	if actualRainydayFund <= 0 {
+		actualRainydayFund = 0
+	}
 
 	retirementPlan := s.cr.RoundFloat(totalEssentialExpense * 12 * RetirementPlanRate)
 
-	isAchivedEmergencyFund := (session.CurrentBalance - totalRemaningDebt) >= emergencyFund
-	isAchivedRainydayFund := (session.CurrentBalance - totalRemaningDebt) >= (emergencyFund + rainydayFund)
-	isAchivedRetirementPlan := (session.CurrentBalance - totalRemaningDebt) >= retirementPlan
+	isAchivedEmergencyFund := netAssets >= expectedEmergencyFund
+	if isAchivedEmergencyFund {
+		actualEmergencyFund = expectedEmergencyFund
+	}
+	isAchivedRainydayFund := netAssets >= (expectedRainydayFund + expectedRainydayFund)
+	if isAchivedRainydayFund {
+		actualRainydayFund = expectedRainydayFund
+	}
+	isAchivedRetirementPlan := netAssets >= retirementPlan
 
 	if isAchivedEmergencyFund && isAchivedRainydayFund {
 		funFund = monthlyNetFlow / 100 * 20
@@ -80,8 +97,11 @@ func (s *Session) recalculateSession(session *model.Session) error {
 	session.TotalAllExpense = totalExpense
 	session.TotalMonthlyPaymentDebt = totalMonthlyPaymentDebt
 	session.MonthlyNetFlow = monthlyNetFlow
-	session.EmergencyFund = emergencyFund
-	session.RainydayFund = rainydayFund
+	session.NetAssets = netAssets
+	session.ExpectedEmergencyFund = expectedEmergencyFund
+	session.ExpectedRainydayFund = expectedRainydayFund
+	session.ActualEmergencyFund = actualEmergencyFund
+	session.ActualRainydayFund = actualRainydayFund
 	session.FunFund = funFund
 	session.RetirementPlan = retirementPlan
 	session.IsAchivedEmergencyFund = isAchivedEmergencyFund
@@ -97,9 +117,12 @@ func (s *Session) recalculateSession(session *model.Session) error {
 		"total_all_expense":          totalExpense,
 		"total_monthly_payment_debt": totalMonthlyPaymentDebt,
 		"monthly_net_flow":           monthlyNetFlow,
+		"net_assets":                 netAssets,
 		"status":                     status,
-		"emergency_fund":             emergencyFund,
-		"rainyday_fund":              rainydayFund,
+		"expected_emergency_fund":    expectedEmergencyFund,
+		"expected_rainyday_fund":     expectedRainydayFund,
+		"actual_emergency_fund":      actualEmergencyFund,
+		"actual_rainyday_fund":       actualRainydayFund,
 		"fun_fund":                   funFund,
 		"retirement_plan":            retirementPlan,
 		"is_achived_emergency_fund":  isAchivedEmergencyFund,
