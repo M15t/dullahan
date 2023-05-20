@@ -131,3 +131,35 @@ func (s *Session) recalculateSession(session *model.Session) error {
 		"is_achived_retirement_plan": isAchivedRetirementPlan,
 	}, session.ID)
 }
+
+func calculateTotalAssets(rec *model.Session) []float64 {
+	var totalAssets []float64
+
+	// r := rec.NetAssets - (rec.ActualEmergencyFund + rec.ActualRainydayFund)
+	// t := rec.MonthlyNetFlow + (r * 0.966)
+
+	// fmt.Println("TotalAssetThisMonth =", rec.NetAssets)
+	// fmt.Println("Emergency =", rec.ActualEmergencyFund)
+	// fmt.Println("Rainy =", rec.ActualRainydayFund)
+	// fmt.Println("NetIncome =", rec.MonthlyNetFlow)
+	// fmt.Println("R = [TotalAssetThisMonth - (Emergency + Rainy)] =", r)
+	// fmt.Println("TotalAsset = NetIncome + R * 0.966 =", t)
+
+	months := []int{12, 24, 36, 48, 60, 72, 84, 96, 108, 120}
+
+	for _, i := range months {
+		// * normal case for each month without debt
+		currentMonthAssets := rec.MonthlyNetFlow * float64(i)
+		// * calculate R
+		if rec.IsAchivedEmergencyFund && rec.IsAchivedRainydayFund {
+			r := currentMonthAssets - (rec.ActualEmergencyFund + rec.ActualRainydayFund)
+			if r >= 0 {
+				currentMonthAssets = currentMonthAssets + (r * 0.966)
+			}
+		}
+
+		totalAssets = append(totalAssets, currentMonthAssets)
+	}
+
+	return totalAssets
+}

@@ -24,6 +24,8 @@ func (s *Session) Me(c echo.Context, authUsr *model.AuthCustomer) (*model.Sessio
 		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
+	rec.TotalAssets = calculateTotalAssets(rec)
+
 	return rec, nil
 }
 

@@ -22,10 +22,10 @@ type Session struct {
 	TotalMonthlyPaymentDebt  float64 `json:"total_monthly_payment_debt"`
 	TotalEssentialExpense    float64 `json:"total_essential_expense"`
 	TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
-	MonthlyNetFlow           float64 `json:"monthly_net_flow"`
+	MonthlyNetFlow           float64 `json:"monthly_net_flow"` // important
 
 	CurrentBalance float64 `json:"current_balance"`
-	NetAssets      float64 `json:"net_assets"`
+	NetAssets      float64 `json:"net_assets"` // use to calculate emergency fund, rainyday fund
 
 	ActualEmergencyFund   float64 `json:"actual_emergency_fund"`
 	ExpectedEmergencyFund float64 `json:"expected_emergency_fund"`
@@ -46,6 +46,8 @@ type Session struct {
 	Incomes  []*Income  `json:"incomes,omitempty"`
 	Expenses []*Expense `json:"expenses,omitempty"`
 	Debts    []*Debt    `json:"debts,omitempty"`
+
+	TotalAssets []float64 `json:"total_assets,omitempty" gorm:"-"`
 }
 
 // AfterSave to run after save

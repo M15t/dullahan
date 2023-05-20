@@ -6,9 +6,11 @@ import (
 	"time"
 
 	dbutil "github.com/M15t/ghoul/pkg/util/db"
-
 	"github.com/imdatngo/gowhere"
-	_ "gorm.io/driver/mysql" // DB adapter
+
+	_ "gorm.io/driver/sqlite" // DB adapter
+
+	// _ "gorm.io/driver/mysql" // DB adapter
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
