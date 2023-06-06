@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/M15t/ghoul v1.0.11
+	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/aws/aws-lambda-go v1.40.0
 	github.com/go-gormigrate/gormigrate/v2 v2.0.2
 	github.com/imdatngo/gowhere v1.1.3

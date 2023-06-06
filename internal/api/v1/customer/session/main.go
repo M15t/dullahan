@@ -1,11 +1,15 @@
 package session
 
 import (
+	"context"
 	"dullahan/internal/model"
+	"time"
 
 	"github.com/M15t/ghoul/pkg/rbac"
 	"github.com/M15t/ghoul/pkg/server"
+	"github.com/allegro/bigcache/v3"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 // Me returns the current session information
@@ -15,16 +19,21 @@ func (s *Session) Me(c echo.Context, authUsr *model.AuthCustomer) (*model.Sessio
 	}
 
 	rec := new(model.Session)
-	if err := s.db.Session.View(s.db.GDB.Preload("Incomes").Preload("Expenses").Preload("Debts"), rec, authUsr.SessionID); err != nil {
+	if err := s.db.Session.View(s.db.GDB.Preload("Incomes").Preload("Expenses").Preload("Debts", func(db *gorm.DB) *gorm.DB {
+		return db.Order("debts.annual_interest DESC,debts.remaining_amount ASC")
+	}), rec, authUsr.SessionID); err != nil {
 		return nil, ErrSessionNotFound.SetInternal(err)
 	}
 
 	// * recalcuate total income, expense, debt and budget cups
-	if err := s.recalculateSession(rec); err != nil {
+	cache, _ := bigcache.New(context.Background(), bigcache.DefaultConfig(1*time.Minute))
+	defer cache.Close()
+
+	if err := s.calculateSession(cache, rec); err != nil {
 		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
-	rec.TotalAssets = calculateTotalAssets(rec)
+	rec.DataSets = generateDatasets(cache, rec)
 
 	return rec, nil
 }

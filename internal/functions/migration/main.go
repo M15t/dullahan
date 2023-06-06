@@ -91,7 +91,6 @@ func Run() (respErr error) {
 					MonthlyNetFlow           float64 `json:"monthly_net_flow"`
 
 					CurrentBalance float64 `json:"current_balance"`
-					NetAssets      float64 `json:"net_assets"`
 
 					ActualEmergencyFund   float64 `json:"actual_emergency_fund"`
 					ExpectedEmergencyFund float64 `json:"expected_emergency_fund"`
@@ -101,10 +100,10 @@ func Run() (respErr error) {
 					Investment            float64 `json:"investment"`
 					RetirementPlan        float64 `json:"retirement_plan"`
 
-					IsAchivedEmergencyFund  bool `json:"is_achived_emergency_fund"`
-					IsAchivedRainydayFund   bool `json:"is_achived_rainyday_fund"`
-					IsAchivedInvestment     bool `json:"is_achived_investment"`
-					IsAchivedRetirementPlan bool `json:"is_achived_retirement_plan"`
+					IsAchivedEmergencyFund  bool `json:"is_achived_emergency_fund" gorm:"default:false"`
+					IsAchivedRainydayFund   bool `json:"is_achived_rainyday_fund" gorm:"default:false"`
+					IsAchivedInvestment     bool `json:"is_achived_investment" gorm:"default:false"`
+					IsAchivedRetirementPlan bool `json:"is_achived_retirement_plan" gorm:"default:false"`
 
 					Status string `json:"status" gorm:"type:varchar(10)"`
 				}
@@ -134,9 +133,6 @@ func Run() (respErr error) {
 					AnnualInterest  float64        `json:"annual_interest"`
 					Type            string         `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
 					PaymentDeadline datatypes.Date `json:"payment_deadline"`
-
-					DebtPaidOffEachMonth     float64 `json:"debt_paid_off_each_month"`
-					InterestPaidOffEachMonth float64 `json:"interest_paid_off_each_month"`
 				}
 
 				// Drop existing table if there is, in case re-apply this migration

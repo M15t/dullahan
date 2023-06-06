@@ -1,29 +1,21 @@
 package debt
 
-import (
-	"dullahan/internal/model"
-)
+// func (s *Debt) recalculateDebt(debt *model.Debt) error {
+// 	interestPaidOffEachMonth := s.calculateInterestPaid(debt.AnnualInterest, debt.MonthlyPayment)
 
-func (s *Debt) recalculateDebt(debt *model.Debt) error {
-	interestPaidOffEachMonth := s.calculateInterestPaid(debt.AnnualInterest, debt.MonthlyPayment)
+// 	return s.db.Debt.Update(s.db.GDB, map[string]interface{}{
+// 		"interest_paid_each_month": interestPaidOffEachMonth,
+// 		"debt_paid_off_each_month": calculateDebtPaid(debt.MonthlyPayment, interestPaidOffEachMonth),
+// 	}, debt.ID)
+// }
 
-	return s.db.Debt.Update(s.db.GDB, map[string]interface{}{
-		"interest_paid_each_month": interestPaidOffEachMonth,
-		"debt_paid_off_each_month": calculateDebtPaid(debt.MonthlyPayment, interestPaidOffEachMonth),
-	}, debt.ID)
-}
+// func (s *Debt) calculateTotalMonthlyPaymentDebt(sessionID int64) float64 {
+// 	var totalMonthlyPaymentDebt float64 = 0.0
+// 	s.db.Debt.SumTotalMonthlyPaymentDebt(s.db.GDB, &totalMonthlyPaymentDebt, sessionID)
 
-func (s *Debt) calculateTotalMonthlyPaymentDebt(sessionID int64) float64 {
-	var totalMonthlyPaymentDebt float64 = 0.0
-	s.db.Debt.SumTotalMonthlyPaymentDebt(s.db.GDB, &totalMonthlyPaymentDebt, sessionID)
+// 	return totalMonthlyPaymentDebt
+// }
 
-	return totalMonthlyPaymentDebt
-}
-
-func (s *Debt) calculateInterestPaid(annualInterest, monthlyPayment float64) float64 {
-	return s.cr.RoundFloat((annualInterest / 12.0) * monthlyPayment)
-}
-
-func calculateDebtPaid(monthlyPayment, interestPaid float64) float64 {
-	return monthlyPayment - interestPaid
-}
+// func calculateDebtPaid(monthlyPayment, interestPaid float64) float64 {
+// 	return monthlyPayment - interestPaid
+// }

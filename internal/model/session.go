@@ -25,7 +25,6 @@ type Session struct {
 	MonthlyNetFlow           float64 `json:"monthly_net_flow"` // important
 
 	CurrentBalance float64 `json:"current_balance"`
-	NetAssets      float64 `json:"net_assets"` // use to calculate emergency fund, rainyday fund
 
 	ActualEmergencyFund   float64 `json:"actual_emergency_fund"`
 	ExpectedEmergencyFund float64 `json:"expected_emergency_fund"`
@@ -47,7 +46,71 @@ type Session struct {
 	Expenses []*Expense `json:"expenses,omitempty"`
 	Debts    []*Debt    `json:"debts,omitempty"`
 
-	TotalAssets []float64 `json:"total_assets,omitempty" gorm:"-"`
+	DataSets []*DataSet `json:"data_sets,omitempty" gorm:"-"`
+}
+
+// DataSet represents the dataset model
+// swagger:model
+type DataSet struct {
+	Group string  `json:"group"`
+	Key   string  `json:"key"`
+	Asset float64 `json:"asset"`
+	Debt  float64 `json:"debt"`
+}
+
+// "total_all_income":           totalIncome,
+// "total_all_expense":          totalExpense,
+// "total_monthly_payment_debt": totalMonthlyPaymentDebt,
+// "monthly_net_flow":           monthlyNetFlow,
+// "status":                     status,
+// "expected_emergency_fund":    expectedEmergencyFund,
+// "expected_rainyday_fund":     expectedRainydayFund,
+// "actual_emergency_fund":      actualEmergencyFund,
+// "actual_rainyday_fund":       actualRainydayFund,
+// "fun_fund":                   funFund,
+// "retirement_plan":            retirementPlan,
+// "is_achived_emergency_fund":  isAchivedEmergencyFund,
+// "is_achived_rainyday_fund":   isAchivedRainydayFund,
+// "is_achived_investment":      isAchivedInvestment,
+// "is_achived_retirement_plan": isAchivedRetirementPlan,
+
+// DataNode represents the data each node
+// swagger:model
+type DataNode struct {
+	SessionID int64  `json:"session_id"`
+	NodeName  string `json:"node_name"`
+
+	CurrentAsset            float64 `json:"current_asset"`
+	TotalAllIncome          float64 `json:"total_all_income"`
+	TotalAllExpense         float64 `json:"total_all_expense"`
+	TotalMonthlyPaymentDebt float64 `json:"total_monthly_payment_debt"`
+	MonthlyNetFlow          float64 `json:"monthly_net_flow"`
+	Status                  string  `json:"status"`
+	Descrtiption            string  `json:"description"`
+	ExpectedEmergencyFund   float64 `json:"expected_emergency_fund"`
+	ExpectedRainydayFund    float64 `json:"expected_rainyday_fund"`
+	ActualEmergencyFund     float64 `json:"actual_emergency_fund"`
+	ActualRainydayFund      float64 `json:"actual_rainyday_fund"`
+	FunFund                 float64 `json:"fun_fund"`
+	RetirementPlan          float64 `json:"retirement_plan"`
+	IsAchivedEmergencyFund  bool    `json:"is_achived_emergency_fund"`
+	IsAchivedRainydayFund   bool    `json:"is_achived_rainyday_fund"`
+	IsAchivedInvestment     bool    `json:"is_achived_investment"`
+	IsAchivedRetirementPlan bool    `json:"is_achived_retirement_plan"`
+}
+
+// DataDebtNode represents the data of debt for each node
+// swagger:model
+type DataDebtNode struct {
+	SessionID int64  `json:"session_id"`
+	NodeName  string `json:"node_name"`
+
+	DebtID int64 `json:"debt_id"`
+
+	RemainingAmount float64 `json:"remaining_amount"`
+	MonthlyPayment  float64 `json:"monthly_payment"`
+
+	IsPaidOff bool `json:"is_paid_off"`
 }
 
 // AfterSave to run after save
@@ -75,6 +138,9 @@ const (
 	SessionStatusDescriptionPC2PC   = "You are earning just enough money to cover your expenses, but you do not have any extra money left over at the end of the month. This can be a stressful financial situation since you have no financial cushion in case of an emergency or unexpected expense. It is important to find ways to increase income or decrease expenses in order to break out of this cycle and build up savings."
 	SessionStatusDescriptionLFF     = "You have some extra money left over at the end of the month, but not enough to save or invest. This can make it difficult for you to respond to unexpected expenses or changes in income."
 	SessionStatusDescriptionGFF     = "Your monthly net income exceeds your essential expenses. This provides you with extra money at the end of each month that you can save or invest. This extra financial cushion can help you respond to unexpected expenses or changes in income. Consider saving toward the Emergency and Rainy Day Fund if you haven’t done so."
+
+	DataSetTypeAsset = "asset"
+	DataSetTypeDebt  = "debt"
 )
 
 // Session status

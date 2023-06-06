@@ -1,6 +1,8 @@
 package crypter
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"time"
@@ -36,6 +38,11 @@ func (*Service) UID() string {
 // RoundFloat rounds float64 to 2 decimal places
 func (s *Service) RoundFloat(f float64) float64 {
 	return toFixedFloat(f, 2)
+}
+
+// Float64ToByte converts float64 to byte
+func (s *Service) Float64ToByte(f float64) []byte {
+	return float64ToByte(f)
 }
 
 // NanoID return unique string nano ID
@@ -94,4 +101,13 @@ func generateNanoID() (string, error) {
 func toFixedFloat(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return float64(int(num*output)) / output
+}
+
+func float64ToByte(f float64) []byte {
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, f)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	return buf.Bytes()
 }

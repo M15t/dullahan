@@ -21,4 +21,5 @@ type Session struct {
 // Crypter represents security interface
 type Crypter interface {
 	RoundFloat(f float64) float64
+	Float64ToByte(f float64) []byte
 }

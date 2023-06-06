@@ -17,18 +17,14 @@ func (s *Debt) Create(c echo.Context, authUsr *model.AuthCustomer, data Creation
 		return nil, err
 	}
 
-	interestPaidOffEachMonth := s.calculateInterestPaid(data.AnnualInterest, data.MonthlyPayment)
-
 	rec := &model.Debt{
-		Name:                     data.Name,
-		RemainingAmount:          data.RemainingAmount,
-		MonthlyPayment:           data.MonthlyPayment,
-		AnnualInterest:           data.AnnualInterest,
-		Type:                     data.Type,
-		PaymentDeadline:          datatypes.Date(data.PaymentDeadline),
-		InterestPaidOffEachMonth: interestPaidOffEachMonth,
-		DebtPaidOffEachMonth:     calculateDebtPaid(data.MonthlyPayment, interestPaidOffEachMonth),
-		SessionID:                authUsr.SessionID,
+		Name:            data.Name,
+		RemainingAmount: data.RemainingAmount,
+		MonthlyPayment:  data.MonthlyPayment,
+		AnnualInterest:  data.AnnualInterest,
+		Type:            data.Type,
+		PaymentDeadline: datatypes.Date(data.PaymentDeadline),
+		SessionID:       authUsr.SessionID,
 	}
 
 	if err := s.db.Debt.Create(s.db.GDB, rec); err != nil {
@@ -59,11 +55,6 @@ func (s *Debt) Update(c echo.Context, authUsr *model.AuthCustomer, id int64, dat
 	rec := new(model.Debt)
 	if err := s.db.Debt.View(s.db.GDB, rec, id); err != nil {
 		return nil, ErrDebtNotFound.SetInternal(err)
-	}
-
-	// * recalculate debt
-	if err := s.recalculateDebt(rec); err != nil {
-		return nil, server.NewHTTPInternalError("Error updating current session").SetInternal(err)
 	}
 
 	return rec, nil
