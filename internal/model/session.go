@@ -104,13 +104,14 @@ type DataNode struct {
 type DataDebtNode struct {
 	SessionID int64  `json:"session_id"`
 	NodeName  string `json:"node_name"`
-
-	DebtID int64 `json:"debt_id"`
+	DebtID    int64  `json:"debt_id"`
+	Index     int    `json:"index"`
 
 	RemainingAmount float64 `json:"remaining_amount"`
 	MonthlyPayment  float64 `json:"monthly_payment"`
 
-	IsPaidOff bool `json:"is_paid_off"`
+	IsEligiblePaidOff bool `json:"is_eligible_paid_off"`
+	IsPaidOff         bool `json:"is_paid_off"`
 }
 
 // AfterSave to run after save
