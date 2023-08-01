@@ -118,8 +118,8 @@ type CreationData struct {
 	RemainingAmount float64 `json:"remaining_amount" validate:"required,gte=0"`
 	// example: 500
 	MonthlyPayment float64 `json:"monthly_payment" validate:"required,gte=0"`
-	// example: 1.1
-	AnnualInterest float64 `json:"annual_interest" validate:"required,gte=0"`
+	// example: 11
+	AnnualInterest float64 `json:"annual_interest" validate:"gte=0"`
 	// example: FIXED
 	Type string `json:"type" validate:"required,oneof=FIXED FIXED_AMORTIZED FLOAT FLOAT_AMORTIZED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
 	// example: 2025-12-31T00:00:00Z
@@ -135,8 +135,8 @@ type UpdateData struct {
 	RemainingAmount *float64 `json:"remaining_amount,omitempty" validate:"omitempty,gte=0"`
 	// example: 500
 	MonthlyPayment *float64 `json:"monthly_payment,omitempty" validate:"omitempty,gte=0"`
-	// example: 1.1
-	AnnualInterest *float64 `json:"annual_interest,omitempty" validate:"omitempty,gte=0"`
+	// example: 11
+	AnnualInterest *float64 `json:"annual_interest,omitempty" validate:"gte=0"`
 	// example: FIXED
 	Type *string `json:"type,omitempty" validate:"omitempty,oneof=FIXED FIXED_AMORTIZED FLOAT FLOAT_AMORTIZED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
 	// example: 2025-12-31T00:00:00Z

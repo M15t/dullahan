@@ -17,14 +17,18 @@ var (
 
 // Const
 const (
-	CustomYear  = 2025
-	CustomMonth = 12
-	CustomDay   = 31
+	YearsForCalculation = 3
+	CustomYear          = 2033
+	CustomMonth         = 12
+	CustomDay           = 31
 
 	UserBudgetIncreasementRate = 0.00966
 	BankruptCeil               = 200.00
 	EmergencyFundRate          = 6.00
 	RainydayFundRate           = 3.00
+	FunFundRate                = 0.2
 
 	RetirementPlanRate = 10.00 // years
+
+	MillionaireRate = 1000000.00 // 1 million dollars
 )

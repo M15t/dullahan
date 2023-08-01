@@ -18,6 +18,15 @@ func (s *Session) getTotalIncome(session *model.Session) float64 {
 	return totalIncome
 }
 
+func (s *Session) getTotalExpense(session *model.Session) float64 {
+	var totalExpense float64 = 0.0
+	if len(session.Expenses) > 0 {
+		s.db.Expense.SumTotalExpense(s.db.GDB, &totalExpense, session.ID)
+	}
+
+	return totalExpense
+}
+
 func (s *Session) getTotalMonthlyPaymentDebt(session *model.Session) float64 {
 	var totalMonthlyPaymentDebt float64 = 0.0
 	if len(session.Debts) > 0 {
@@ -37,14 +46,19 @@ func (s *Session) getTotalRemaingingDebt(session *model.Session) float64 {
 }
 
 func (s *Session) calculateSession(cache *bigcache.BigCache, session *model.Session) error {
+	var isPaidAllDebt bool
+
+	if len(session.Debts) == 0 {
+		isPaidAllDebt = true
+	}
+
+	session.TotalAllIncome = s.getTotalIncome(session)
+	session.TotalMonthlyPaymentDebt = s.getTotalMonthlyPaymentDebt(session)
+	session.TotalAllExpense = s.getTotalExpense(session)
+
 	// * init first node
-	node := calculateNode(session.ID, "0",
-		roundFloat(session.CurrentBalance),
-		roundFloat(session.TotalEssentialExpense),
-		roundFloat(session.TotalNonEssentialExpense),
-		roundFloat(s.getTotalRemaingingDebt(session)),
-		roundFloat(s.getTotalIncome(session)),
-		roundFloat(s.getTotalMonthlyPaymentDebt(session)))
+	node := calculateNode(session, 0, "0",
+		roundFloat(session.CurrentBalance), 0, isPaidAllDebt)
 
 	// * set node to cache
 	setNodeToCache(cache, node)
@@ -56,9 +70,10 @@ func (s *Session) calculateSession(cache *bigcache.BigCache, session *model.Sess
 	session.MonthlyNetFlow = node.MonthlyNetFlow
 	session.ExpectedEmergencyFund = node.ExpectedEmergencyFund
 	session.ExpectedRainydayFund = node.ExpectedRainydayFund
+	session.ExpectedFunFund = node.ExpectFunFund
 	session.ActualEmergencyFund = node.ActualEmergencyFund
 	session.ActualRainydayFund = node.ActualRainydayFund
-	session.FunFund = node.FunFund
+	session.ActualFunFund = node.ActualFunFund
 	session.RetirementPlan = node.RetirementPlan
 	session.IsAchivedEmergencyFund = node.IsAchivedEmergencyFund
 	session.IsAchivedRainydayFund = node.IsAchivedRainydayFund
@@ -76,9 +91,10 @@ func (s *Session) calculateSession(cache *bigcache.BigCache, session *model.Sess
 		"status":                     node.Status,
 		"expected_emergency_fund":    node.ExpectedEmergencyFund,
 		"expected_rainyday_fund":     node.ExpectedRainydayFund,
+		"expected_fun_fund":          node.ExpectFunFund,
 		"actual_emergency_fund":      node.ActualEmergencyFund,
 		"actual_rainyday_fund":       node.ActualRainydayFund,
-		"fun_fund":                   node.FunFund,
+		"actual_fun_fund":            node.ActualFunFund,
 		"retirement_plan":            node.RetirementPlan,
 		"is_achived_emergency_fund":  node.IsAchivedEmergencyFund,
 		"is_achived_rainyday_fund":   node.IsAchivedRainydayFund,
@@ -87,64 +103,337 @@ func (s *Session) calculateSession(cache *bigcache.BigCache, session *model.Sess
 	}, session.ID)
 }
 
-func calculateDebtPaidEachMonth(monthlyPayment, annualInterest float64) float64 {
-	interestPaid := roundFloat((annualInterest / 12.0) * monthlyPayment)
-	return roundFloat(monthlyPayment-interestPaid) * 3
+func (s *Session) generateLinechart(cache *bigcache.BigCache, rec *model.Session) []*model.LineChart {
+	now := time.Now()
+
+	startDate := now
+	endDate := time.Date(now.Year()+YearsForCalculation, CustomMonth, CustomDay, 0, 0, 0, 0, time.UTC)
+
+	if len(rec.Debts) > 0 { // * case with debt
+		return s.generateDatasetWithDebt(cache, rec, startDate, endDate)
+	}
+
+	// * case without debt
+	return s.generateDatasetWithoutDebt(cache, rec, startDate, endDate)
 }
 
-func calculateNode(sessionID int64,
-	nodeName string,
-	currentAsset,
-	totalEssentialExpense,
-	totalNonEssentialExpense,
-	totalRemainingDebt,
-	totalIncome,
-	totalMonthlyPaymentDebt float64) *model.DataNode {
-	var funFund float64
-	var isAchivedInvestment bool
+func (s *Session) generateDatasetWithoutDebt(cache *bigcache.BigCache, rec *model.Session, startDate, endDate time.Time) []*model.LineChart {
+	var monthlyNetFlowWithoutDebt, currentAssetToMillionaire float64
+	var millionaireDate string
+	datasets := make([]*model.LineChart, 0)
+	events := make(map[int]string)
+	// 0 emergency fund
+	// 1 rainy day fund
+	// 2 investment
+	// 3 financial freedom
 
-	totalExpense := roundFloat(totalEssentialExpense + totalNonEssentialExpense)
+	for i, q := range generateMonths(startDate, endDate) {
+		var curNode, prevNode *model.DataNode
+		var currentAsset float64
+		if i == 0 {
+			currentAsset = rec.CurrentBalance + calculateMonthlyNetFlow(rec)
+		} else {
+			prevNode = getNodeFromCache(cache, rec, fmt.Sprintf("%d", i-1))
+			currentAsset = prevNode.CurrentAsset + calculateMonthlyNetFlow(rec)
+		}
 
-	monthlyNetFlow := totalIncome - (totalMonthlyPaymentDebt + totalExpense)
+		// * calculate current node
+		curNode = calculateNode(rec, q, fmt.Sprintf("%d", i),
+			currentAsset, // * dynamic
+			0,            // * no debt
+			true)         // * no debt
 
-	// * total asset this month <-
-	currentAsset = currentAsset + monthlyNetFlow
+		if rec.TotalAllIncome > 0 {
+			if prevNode != nil && !prevNode.IsAchivedEmergencyFund && curNode.IsAchivedEmergencyFund || prevNode == nil && curNode.IsAchivedEmergencyFund {
+				events[0] = getMonthAndYear(startDate, q)
+			}
 
-	netAsset := currentAsset - totalRemainingDebt
+			if prevNode != nil && !prevNode.IsAchivedRainydayFund && curNode.IsAchivedRainydayFund || prevNode == nil && curNode.IsAchivedRainydayFund {
+				events[1] = getMonthAndYear(startDate, q)
+			}
 
-	expectedEmergencyFund := roundFloat(totalEssentialExpense * EmergencyFundRate)
-	expectedRainydayFund := roundFloat(totalEssentialExpense * RainydayFundRate)
+			if prevNode != nil && !prevNode.IsAchivedInvestment && curNode.IsAchivedEmergencyFund && curNode.IsAchivedRainydayFund || prevNode == nil && curNode.IsAchivedEmergencyFund && curNode.IsAchivedRainydayFund {
+				events[2] = getMonthAndYear(startDate, q)
+				monthlyNetFlowWithoutDebt = curNode.MonthlyNetFlow
+				currentAssetToMillionaire = currentAsset
+			}
 
-	actualEmergencyFund := roundFloat(netAsset)
-	if actualEmergencyFund <= 0 {
-		actualEmergencyFund = 0
+			if prevNode != nil && !prevNode.IsAchivedFinancialFreedom && curNode.IsAchivedFinancialFreedom {
+				events[3] = getMonthAndYear(startDate, q)
+			}
+		}
+
+		setNodeToCache(cache, curNode)
+
+		// * append asset
+		if curNode.CurrentAsset > 0 {
+			datasets = append(datasets, &model.LineChart{
+				Group: "Assets",
+				Key:   getMonth(startDate, q),
+				Asset: curNode.CurrentAsset,
+			})
+		} else {
+			datasets = append(datasets, &model.LineChart{
+				Group: "Assets",
+				Key:   getMonth(startDate, q),
+				Asset: 0,
+			})
+			events[4] = getMonthAndYear(startDate, q)
+			break
+		}
 	}
-	actualRainydayFund := roundFloat(netAsset - expectedEmergencyFund)
-	if actualRainydayFund <= 0 {
-		actualRainydayFund = 0
+
+	if currentAssetToMillionaire > 0 {
+		remainingAssetToMillionaire := MillionaireRate - currentAssetToMillionaire
+
+		becomeMillionaireIn := remainingAssetToMillionaire / monthlyNetFlowWithoutDebt // months
+
+		// fmt.Printf("becomeMillionaireIn ==== %f years \n", becomeMillionaireIn/12/2)
+
+		t := startDate.AddDate(0, int(becomeMillionaireIn/2), 0)
+		millionaireDate = t.Format("Jan 2006")
 	}
 
-	retirementPlan := roundFloat(totalEssentialExpense * 12 * RetirementPlanRate)
-
-	isAchivedEmergencyFund := netAsset >= expectedEmergencyFund
-	if isAchivedEmergencyFund {
-		actualEmergencyFund = expectedEmergencyFund
+	if err := s.db.Session.Update(s.db.GDB, map[string]interface{}{
+		"forecast_emergency_budget_filled_date": events[0],
+		"forecast_start_investing_date":         events[2],
+		"forecast_rainyday_budget_filled_date":  events[1],
+		"forecast_financial_freedom_date":       events[3],
+		"forecast_millionaire_date":             millionaireDate,
+		"forecast_bankrupt":                     events[4],
+	}, rec.ID); err != nil {
+		fmt.Println("Error updating forecast events")
 	}
-	isAchivedRainydayFund := netAsset >= (expectedEmergencyFund + expectedRainydayFund)
-	if isAchivedRainydayFund {
-		actualRainydayFund = expectedRainydayFund
+
+	return datasets
+}
+
+func (s *Session) generateDatasetWithDebt(cache *bigcache.BigCache, rec *model.Session, startDate, endDate time.Time) []*model.LineChart {
+	var monthlyNetFlowWithoutDebt, currentAssetToMillionaire float64
+	var millionaireDate string
+	datasets := make([]*model.LineChart, 0)
+	eligiblePaidOff := map[int]bool{0: true}
+	events := make(map[int]string)
+	// 0 emergency fund
+	// 1 rainy day fund
+	// 2 investment
+	// 3 financial freedom
+	// 4 bankrupt
+
+	for i := 1; i <= len(rec.Debts); i++ {
+		eligiblePaidOff[i] = false
 	}
-	isAchivedRetirementPlan := netAsset >= retirementPlan && retirementPlan > 0
 
-	if isAchivedEmergencyFund && isAchivedRainydayFund {
-		funFund = monthlyNetFlow / 100 * 20
-		isAchivedInvestment = true
+	for i, q := range generateMonths(startDate, endDate) {
+		var curNode, prevNode *model.DataNode
+		var currentAsset, totalRemainingDebt float64
+		if i == 0 {
+			currentAsset = rec.CurrentBalance + calculateMonthlyNetFlow(rec)
+		} else {
+			prevNode = getNodeFromCache(cache, rec, fmt.Sprintf("%d", i-1))
+			currentAsset = prevNode.CurrentAsset + calculateMonthlyNetFlow(rec)
+		}
 
-		// * calculate R
-		r := currentAsset - (actualEmergencyFund + actualRainydayFund)
+		for j, debt := range rec.Debts {
+			var currentRemainingDebt, totalRemainingAmount float64
+			var isPaidOff bool
+			var prevDebtNode *model.DataDebtNode
 
-		if r >= 0 {
-			currentAsset = currentAsset + (r * UserBudgetIncreasementRate)
+			if i == 0 {
+				totalRemainingAmount = debt.RemainingAmount
+			} else {
+				prevDebtNode = getDebtNodeFromCache(cache, rec, debt, j, fmt.Sprintf("%d", i-1))
+				totalRemainingAmount = prevDebtNode.RemainingAmount
+			}
+
+			// * paid off
+			if totalRemainingAmount > 0 &&
+				currentAsset-totalRemainingAmount > 0 &&
+				currentAsset-totalRemainingAmount > rec.TotalMonthlyPaymentDebt-debt.MonthlyPayment &&
+				eligiblePaidOff[j] {
+
+				fmt.Println("paid off here", j, getMonthAndYear(startDate, q))
+
+				currentAsset = currentAsset - totalRemainingAmount
+				currentRemainingDebt = 0
+				isPaidOff = true
+
+				if err := s.db.Debt.Update(s.db.GDB, map[string]interface{}{
+					"forecast_paid_off_date": getMonthAndYear(startDate, q),
+				}, debt.ID); err != nil {
+					return nil
+				}
+
+				// * update next debt to be eligible paid off
+				eligiblePaidOff[j+1] = true
+			} else {
+				currentAsset = currentAsset - debt.MonthlyPayment
+				currentRemainingDebt = totalRemainingAmount - calculateDebtPaidEachMonth(debt.MonthlyPayment, debt.AnnualInterest)
+			}
+
+			if currentRemainingDebt > 0 {
+				totalRemainingDebt = totalRemainingDebt + currentRemainingDebt
+			}
+
+			if prevDebtNode != nil && prevDebtNode.RemainingAmount <= 0 {
+				currentAsset = currentAsset + debt.MonthlyPayment
+			}
+
+			// * append debt
+			if currentRemainingDebt >= 0 {
+				datasets = append(datasets, &model.LineChart{
+					Group: debt.Name,
+					Key:   getMonth(startDate, q),
+					Debt:  roundFloat(currentRemainingDebt),
+				})
+
+				setDebtNodeToCache(cache, &model.DataDebtNode{
+					SessionID:       rec.ID,
+					NodeName:        fmt.Sprintf("%d", i),
+					DebtID:          debt.ID,
+					Index:           j,
+					RemainingAmount: currentRemainingDebt,
+					MonthlyPayment:  debt.MonthlyPayment,
+					IsPaidOff:       isPaidOff,
+				})
+			}
+
+		}
+
+		// * calculate current node
+		curNode = calculateNode(rec, q, fmt.Sprintf("%d", i),
+			currentAsset,                   // * dynamic
+			totalRemainingDebt,             // * dynamic
+			isPaidAllDebt(eligiblePaidOff)) // * dynamic
+
+		if prevNode != nil && !prevNode.IsAchivedEmergencyFund && curNode.IsAchivedEmergencyFund {
+			events[0] = getMonthAndYear(startDate, q)
+		}
+
+		if prevNode != nil && !prevNode.IsAchivedRainydayFund && curNode.IsAchivedRainydayFund {
+			events[1] = getMonthAndYear(startDate, q)
+		}
+
+		if prevNode != nil && !prevNode.IsAchivedInvestment && curNode.IsAchivedEmergencyFund && curNode.IsAchivedRainydayFund {
+			events[2] = getMonthAndYear(startDate, q)
+			monthlyNetFlowWithoutDebt = curNode.MonthlyNetFlow
+			currentAssetToMillionaire = currentAsset
+		}
+
+		if prevNode != nil && !prevNode.IsAchivedFinancialFreedom && curNode.IsAchivedFinancialFreedom {
+			events[3] = getMonthAndYear(startDate, q)
+		}
+
+		setNodeToCache(cache, curNode)
+
+		// * append asset
+		if curNode.CurrentAsset > 0 {
+			datasets = append(datasets, &model.LineChart{
+				Group: "Assets",
+				Key:   getMonth(startDate, q),
+				Asset: curNode.CurrentAsset,
+			})
+		} else {
+			datasets = append(datasets, &model.LineChart{
+				Group: "Assets",
+				Key:   getMonth(startDate, q),
+				Asset: 0,
+			})
+			events[4] = getMonthAndYear(startDate, q)
+			break
+		}
+	}
+
+	if currentAssetToMillionaire > 0 {
+		remainingAssetToMillionaire := MillionaireRate - currentAssetToMillionaire
+
+		becomeMillionaireIn := remainingAssetToMillionaire / monthlyNetFlowWithoutDebt // months
+
+		// fmt.Printf("becomeMillionaireIn ==== %f years \n", becomeMillionaireIn/12/2)
+
+		t := startDate.AddDate(0, int(becomeMillionaireIn/2), 0)
+		millionaireDate = t.Format("Jan 2006")
+	} else {
+
+	}
+
+	if err := s.db.Session.Update(s.db.GDB, map[string]interface{}{
+		"forecast_emergency_budget_filled_date": events[0],
+		"forecast_start_investing_date":         events[2],
+		"forecast_rainyday_budget_filled_date":  events[1],
+		"forecast_financial_freedom_date":       events[3],
+		"forecast_millionaire_date":             millionaireDate,
+		"forecast_bankrupt":                     events[4],
+	}, rec.ID); err != nil {
+		fmt.Println("Error updating forecast events")
+	}
+
+	return datasets
+}
+
+func calculateDebtPaidEachMonth(monthlyPayment, annualInterest float64) float64 {
+	return roundFloat((1 - (annualInterest / 12.0 / 100)) * monthlyPayment)
+}
+
+func calculateNode(session *model.Session, calcTime int64, nodeName string, currentAsset, totalRemainingDebt float64, isPaidAllDebt bool) *model.DataNode {
+	var expectedEmergencyFund, expectedRainydayFund, expectedFunFund, actualEmergencyFund, actualRainydayFund, actualFunFund, retirementPlan float64
+	var isAchivedInvestment, isAchivedEmergencyFund, isAchivedRainydayFund, isAchivedRetirementPlan bool
+
+	isAchivedFinancialFreedom := true
+
+	monthlyNetFlow := calculateMonthlyNetFlow(session)
+
+	totalMonthlyPaymentDebt := session.TotalMonthlyPaymentDebt
+	totalIncome := session.TotalAllIncome
+	totalExpense := session.TotalAllExpense
+
+	totalEssentialExpense := session.TotalEssentialExpense
+
+	expectedEmergencyFund = roundFloat(totalEssentialExpense * EmergencyFundRate)
+	expectedRainydayFund = roundFloat(totalEssentialExpense * RainydayFundRate)
+	expectedFunFund = roundFloat(monthlyNetFlow * FunFundRate)
+
+	retirementPlan = roundFloat(totalEssentialExpense * 12 * RetirementPlanRate)
+
+	// * only achived when emergency fund and rainy day fund is achived and no debt
+	if isPaidAllDebt {
+		netAsset := currentAsset - totalRemainingDebt
+
+		actualEmergencyFund := roundFloat(netAsset)
+		if actualEmergencyFund <= 0 {
+			actualEmergencyFund = 0
+		}
+		actualRainydayFund := roundFloat(netAsset - expectedEmergencyFund)
+		if actualRainydayFund <= 0 {
+			actualRainydayFund = 0
+		}
+
+		isAchivedEmergencyFund = netAsset >= expectedEmergencyFund
+		if isAchivedEmergencyFund {
+			actualEmergencyFund = expectedEmergencyFund
+		}
+
+		isAchivedRainydayFund = netAsset >= (expectedEmergencyFund + expectedRainydayFund)
+		if isAchivedRainydayFund {
+			actualRainydayFund = expectedRainydayFund
+		}
+
+		if isAchivedEmergencyFund && isAchivedRainydayFund {
+			isAchivedInvestment = true
+
+			// * calculate R
+			r := currentAsset - (actualEmergencyFund + actualRainydayFund)
+
+			if r >= 0 {
+				currentAsset = currentAsset + (r * UserBudgetIncreasementRate)
+
+				// * update forecast financial freedom
+				if r*UserBudgetIncreasementRate < totalEssentialExpense {
+					isAchivedFinancialFreedom = false
+				}
+			}
+
+			isAchivedRetirementPlan = netAsset >= retirementPlan && retirementPlan > 0
 		}
 	}
 
@@ -163,25 +452,28 @@ func calculateNode(sessionID int64,
 	}
 
 	return &model.DataNode{
-		SessionID:               sessionID,
-		NodeName:                nodeName,
-		CurrentAsset:            roundFloat(currentAsset),
-		TotalAllIncome:          totalIncome,
-		TotalAllExpense:         totalExpense,
-		TotalMonthlyPaymentDebt: roundFloat(totalMonthlyPaymentDebt),
-		MonthlyNetFlow:          monthlyNetFlow,
-		Status:                  status,
-		Descrtiption:            model.SessionStatusDescriptions[status],
-		ExpectedEmergencyFund:   expectedEmergencyFund,
-		ExpectedRainydayFund:    expectedRainydayFund,
-		ActualEmergencyFund:     actualEmergencyFund,
-		ActualRainydayFund:      actualRainydayFund,
-		FunFund:                 funFund,
-		RetirementPlan:          retirementPlan,
-		IsAchivedEmergencyFund:  isAchivedEmergencyFund,
-		IsAchivedRainydayFund:   isAchivedRainydayFund,
-		IsAchivedInvestment:     isAchivedInvestment,
-		IsAchivedRetirementPlan: isAchivedRetirementPlan,
+		SessionID:                 session.ID,
+		NodeName:                  nodeName,
+		CurrentAsset:              roundFloat(currentAsset),
+		TotalAllIncome:            totalIncome,
+		TotalAllExpense:           totalExpense,
+		TotalMonthlyPaymentDebt:   roundFloat(totalMonthlyPaymentDebt),
+		MonthlyNetFlow:            monthlyNetFlow,
+		Status:                    status,
+		Descrtiption:              model.SessionStatusDescriptions[status],
+		ExpectedEmergencyFund:     expectedEmergencyFund,
+		ExpectedRainydayFund:      expectedRainydayFund,
+		ExpectFunFund:             expectedFunFund,
+		ActualEmergencyFund:       actualEmergencyFund,
+		ActualRainydayFund:        actualRainydayFund,
+		ActualFunFund:             actualFunFund,
+		RetirementPlan:            retirementPlan,
+		IsAchivedEmergencyFund:    isAchivedEmergencyFund,
+		IsAchivedRainydayFund:     isAchivedRainydayFund,
+		IsAchivedInvestment:       isAchivedInvestment,
+		IsAchivedRetirementPlan:   isAchivedRetirementPlan,
+		IsAchivedFinancialFreedom: isAchivedFinancialFreedom,
+		IsPaidAllDebt:             isPaidAllDebt,
 	}
 }
 
@@ -201,13 +493,18 @@ func setNodeToCache(cache *bigcache.BigCache, node *model.DataNode) {
 	cache.Set(fmt.Sprintf("%d_%s_expected_rainyday_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.ExpectedRainydayFund)))
 	cache.Set(fmt.Sprintf("%d_%s_actual_rainyday_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.ActualRainydayFund)))
 
-	cache.Set(fmt.Sprintf("%d_%s_fun_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.FunFund)))
+	cache.Set(fmt.Sprintf("%d_%s_expected_fun_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.ExpectFunFund)))
+	cache.Set(fmt.Sprintf("%d_%s_actual_fun_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.ActualFunFund)))
+
 	cache.Set(fmt.Sprintf("%d_%s_retirement_plan", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%f", node.RetirementPlan)))
 
 	cache.Set(fmt.Sprintf("%d_%s_is_achived_emergency_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsAchivedEmergencyFund)))
 	cache.Set(fmt.Sprintf("%d_%s_is_achived_rainyday_fund", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsAchivedRainydayFund)))
 	cache.Set(fmt.Sprintf("%d_%s_is_achived_investment", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsAchivedInvestment)))
 	cache.Set(fmt.Sprintf("%d_%s_is_achived_retirement_plan", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsAchivedRetirementPlan)))
+	cache.Set(fmt.Sprintf("%d_%s_is_achived_financial_freedom", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsAchivedFinancialFreedom)))
+
+	cache.Set(fmt.Sprintf("%d_%s_is_paid_all_debt", node.SessionID, node.NodeName), []byte(fmt.Sprintf("%v", node.IsPaidAllDebt)))
 }
 
 func getNodeFromCache(cache *bigcache.BigCache, session *model.Session, nodeName string) *model.DataNode {
@@ -242,8 +539,11 @@ func getNodeFromCache(cache *bigcache.BigCache, session *model.Session, nodeName
 	carf, _ := cache.Get(fmt.Sprintf("%d_%s_actual_rainyday_fund", session.ID, nodeName))
 	cActualRainydayFund, _ := strconv.ParseFloat(string(carf), 64)
 
-	cff, _ := cache.Get(fmt.Sprintf("%d_%s_fun_fund", session.ID, nodeName))
-	cFunFund, _ := strconv.ParseFloat(string(cff), 64)
+	ceff, _ := cache.Get(fmt.Sprintf("%d_%s_expected_fun_fund", session.ID, nodeName))
+	cExpectFunFund, _ := strconv.ParseFloat(string(ceff), 64)
+
+	caff, _ := cache.Get(fmt.Sprintf("%d_%s_actual_fun_fund", session.ID, nodeName))
+	cActualFunFund, _ := strconv.ParseFloat(string(caff), 64)
 
 	crp, _ := cache.Get(fmt.Sprintf("%d_%s_retirement_plan", session.ID, nodeName))
 	cRetirementPlan, _ := strconv.ParseFloat(string(crp), 64)
@@ -260,6 +560,12 @@ func getNodeFromCache(cache *bigcache.BigCache, session *model.Session, nodeName
 	ciarp, _ := cache.Get(fmt.Sprintf("%d_%s_is_achived_retirement_plan", session.ID, nodeName))
 	cIsAchivedRetirementPlan, _ := strconv.ParseBool(string(ciarp))
 
+	ciaff, _ := cache.Get(fmt.Sprintf("%d_%s_is_achived_financial_freedom", session.ID, nodeName))
+	cIsAchivedFinancialFreedom, _ := strconv.ParseBool(string(ciaff))
+
+	cipad, _ := cache.Get(fmt.Sprintf("%d_%s_is_paid_all_debt", session.ID, nodeName))
+	cIsPaidAllDebt, _ := strconv.ParseBool(string(cipad))
+
 	return &model.DataNode{
 		SessionID:               session.ID,
 		NodeName:                nodeName,
@@ -273,16 +579,19 @@ func getNodeFromCache(cache *bigcache.BigCache, session *model.Session, nodeName
 
 		ExpectedEmergencyFund: cExpectedEmergencyFund,
 		ExpectedRainydayFund:  cExpectedRainydayFund,
+		ExpectFunFund:         cExpectFunFund,
 		ActualEmergencyFund:   cActualEmergencyFund,
 		ActualRainydayFund:    cActualRainydayFund,
+		ActualFunFund:         cActualFunFund,
 
-		FunFund:        cFunFund,
 		RetirementPlan: cRetirementPlan,
 
-		IsAchivedEmergencyFund:  cIsAchivedEmergencyFund,
-		IsAchivedRainydayFund:   cIsAchivedRainydayFund,
-		IsAchivedInvestment:     cIsAchivedInvestment,
-		IsAchivedRetirementPlan: cIsAchivedRetirementPlan,
+		IsAchivedEmergencyFund:    cIsAchivedEmergencyFund,
+		IsAchivedRainydayFund:     cIsAchivedRainydayFund,
+		IsAchivedInvestment:       cIsAchivedInvestment,
+		IsAchivedRetirementPlan:   cIsAchivedRetirementPlan,
+		IsAchivedFinancialFreedom: cIsAchivedFinancialFreedom,
+		IsPaidAllDebt:             cIsPaidAllDebt,
 	}
 }
 
@@ -319,157 +628,36 @@ func getDebtNodeFromCache(cache *bigcache.BigCache, session *model.Session, debt
 	}
 }
 
-func generateDatasets(cache *bigcache.BigCache, rec *model.Session) []*model.DataSet {
-	startDate := time.Now()
-	endDate := time.Date(CustomYear, CustomMonth, CustomDay, 0, 0, 0, 0, time.UTC)
-
-	if len(rec.Debts) > 0 { // * case with debt
-		return generateDataSetWithDebt(cache, rec, startDate, endDate)
+func mappingFullStatus(status string) string {
+	switch status {
+	case model.SessionStatusBD:
+		return "Budget Deficit"
+	case model.SessionStatusPC2PC:
+		return "Pay Check to Pay Check"
+	case model.SessionStatusLFF:
+		return "Limited financial flexibility"
+	case model.SessionStatusGFF:
+		return "Good financial flexibility"
+	default:
+		return "Default"
 	}
-
-	// * case without debt
-	return generateDataSetWithoutDebt(cache, rec, startDate, endDate)
 }
 
-func generateDataSetWithoutDebt(cache *bigcache.BigCache, rec *model.Session, startDate, endDate time.Time) []*model.DataSet {
-	datasets := make([]*model.DataSet, 0)
-
-	for i, q := range generateMonths(startDate, endDate) {
-		fmt.Println(q)
-		curNode := new(model.DataNode)
-		if i == 0 {
-			curNode = getNodeFromCache(cache, rec, "0")
-		} else {
-			prevNode := getNodeFromCache(cache, rec, fmt.Sprintf("%d", i-1))
-
-			curNode = calculateNode(rec.ID, fmt.Sprintf("%d", i),
-				roundFloat(prevNode.CurrentAsset),        // * dynamic
-				roundFloat(rec.TotalEssentialExpense),    // * static
-				roundFloat(rec.TotalNonEssentialExpense), // * static
-				0.0,                                      // * no debt
-				roundFloat(rec.TotalAllIncome),           // * static
-				0.0)                                      // * no debt
-
-			setNodeToCache(cache, curNode)
-		}
-
-		if curNode.CurrentAsset > 0 {
-			datasets = append(datasets, &model.DataSet{
-				Group: "Assets",
-				Key:   getMonth(startDate, q),
-				Asset: curNode.CurrentAsset,
-			})
-		} else {
-			datasets = append(datasets, &model.DataSet{
-				Group: "Assets",
-				Key:   getMonth(startDate, q),
-				Asset: 0,
-			})
-			break
+func isPaidAllDebt(m map[int]bool) bool {
+	for _, v := range m {
+		if !v {
+			return false
 		}
 	}
-
-	return datasets
+	return true
 }
 
-func generateDataSetWithDebt(cache *bigcache.BigCache, rec *model.Session, startDate, endDate time.Time) []*model.DataSet {
-	datasets := make([]*model.DataSet, 0)
-	eligiblePaidOff := make(map[int]bool)
-	eligiblePaidOff[0] = true
+func calculateMonthlyNetFlow(session *model.Session) float64 {
+	totalIncome := session.TotalAllIncome
+	totalEssentialExpense := session.TotalEssentialExpense
+	totalNonEssentialExpense := session.TotalNonEssentialExpense
 
-	for i := 1; i <= len(rec.Debts); i++ {
-		eligiblePaidOff[i] = false
-	}
+	totalExpense := roundFloat(totalEssentialExpense + totalNonEssentialExpense)
 
-	for i, q := range generateMonths(startDate, endDate) {
-		var curNode *model.DataNode
-		if i == 0 {
-			curNode = getNodeFromCache(cache, rec, "0")
-		}
-
-		prevNode := getNodeFromCache(cache, rec, fmt.Sprintf("%d", i-1))
-
-		for j, debt := range rec.Debts {
-			var currentRemainingDebt float64
-			var isPaidOff bool
-			if i == 0 {
-				currentRemainingDebt = debt.RemainingAmount
-
-				setDebtNodeToCache(cache, &model.DataDebtNode{
-					SessionID:       rec.ID,
-					NodeName:        "0",
-					DebtID:          debt.ID,
-					Index:           j,
-					RemainingAmount: currentRemainingDebt,
-					MonthlyPayment:  debt.MonthlyPayment,
-					IsPaidOff:       isPaidOff,
-				})
-			} else {
-				prevDebtNode := getDebtNodeFromCache(cache, rec, debt, j, fmt.Sprintf("%d", i-1))
-
-				currentRemainingDebt = roundFloat(prevDebtNode.RemainingAmount - (calculateDebtPaidEachMonth(debt.MonthlyPayment, debt.AnnualInterest)))
-
-				// * paid off
-				if currentRemainingDebt > 0 && prevNode.CurrentAsset-currentRemainingDebt >= 0 && eligiblePaidOff[j] {
-					prevNode.CurrentAsset = prevNode.CurrentAsset - currentRemainingDebt
-					currentRemainingDebt = 0
-					isPaidOff = true
-
-					// * update next debt to be eligible paid off
-					eligiblePaidOff[j+1] = true
-				}
-
-				setDebtNodeToCache(cache, &model.DataDebtNode{
-					SessionID:       rec.ID,
-					NodeName:        fmt.Sprintf("%d", i),
-					DebtID:          debt.ID,
-					Index:           j,
-					RemainingAmount: currentRemainingDebt,
-					MonthlyPayment:  debt.MonthlyPayment,
-					IsPaidOff:       isPaidOff,
-				})
-
-				if prevDebtNode.RemainingAmount <= 0 {
-					prevNode.CurrentAsset = prevNode.CurrentAsset + debt.MonthlyPayment
-				}
-
-				curNode = calculateNode(rec.ID, fmt.Sprintf("%d", i),
-					roundFloat(prevNode.CurrentAsset),        // * dynamic
-					roundFloat(rec.TotalEssentialExpense),    // * static
-					roundFloat(rec.TotalNonEssentialExpense), // * static
-					currentRemainingDebt,                     // * dynamic
-					roundFloat(rec.TotalAllIncome),           // *static
-					debt.MonthlyPayment)                      // * dynamic
-			}
-
-			// * append debt
-			if currentRemainingDebt >= 0 {
-				datasets = append(datasets, &model.DataSet{
-					Group: debt.Name,
-					Key:   getMonth(startDate, q),
-					Debt:  roundFloat(currentRemainingDebt),
-				})
-			}
-		}
-
-		setNodeToCache(cache, curNode)
-
-		// * append asset
-		if curNode.CurrentAsset > 0 {
-			datasets = append(datasets, &model.DataSet{
-				Group: "Assets",
-				Key:   getMonth(startDate, q),
-				Asset: curNode.CurrentAsset,
-			})
-		} else {
-			datasets = append(datasets, &model.DataSet{
-				Group: "Assets",
-				Key:   getMonth(startDate, q),
-				Asset: 0,
-			})
-			break
-		}
-	}
-
-	return datasets
+	return totalIncome - totalExpense
 }

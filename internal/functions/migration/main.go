@@ -180,6 +180,89 @@ func Run() (respErr error) {
 				return migration.ExecMultiple(tx, strings.Join(changes, " "))
 			},
 		},
+		// add column "forecast_paid_off_date" to debts table
+		{
+			ID: "202307191521",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE debts ADD COLUMN forecast_paid_off_date VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE debts DROP COLUMN forecast_paid_off_date;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// add column "forecast_start_investing_date", "forecast_financial_freedom_date", "forecast_millionaire_date" to sessions table
+		// "forecast_emergency_budget_filled_date", "forecast_rainyday_budget_filled_date"
+		{
+			ID: "202307191630",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN forecast_emergency_budget_filled_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_rainyday_budget_filled_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_start_investing_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_financial_freedom_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_millionaire_date VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN forecast_emergency_budget_filled_date,
+						DROP COLUMN forecast_rainyday_budget_filled_date,
+						DROP COLUMN forecast_start_investing_date,
+						DROP COLUMN forecast_financial_freedom_date,
+						DROP COLUMN forecast_millionaire_date;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// replace name fun_fund to actual_fun_fund, add column expected_fun_fund to sessions table
+		{
+			ID: "202307221532",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN expected_fun_fund DOUBLE DEFAULT 0 AFTER fun_fund;`,
+					`ALTER TABLE sessions CHANGE fun_fund actual_fun_fund DOUBLE DEFAULT 0;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN expected_fun_fund;`,
+					`ALTER TABLE sessions CHANGER actual_fun_fund fun_fund DOUBLE DEFAULT 0;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// add "forecast_bankrupt" to sessions table
+		{
+			ID: "202307251001",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN forecast_bankrupt VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN forecast_bankrupt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
 	})
 
 	return nil

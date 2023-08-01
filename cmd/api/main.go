@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"dullahan/config"
+	"time"
 
 	"dullahan/internal/api/v1/auth"
 	"dullahan/internal/api/v1/customer/debt"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/M15t/ghoul/pkg/server"
 	"github.com/M15t/ghoul/pkg/server/middleware/jwt"
+	"github.com/allegro/bigcache/v3"
 
 	_ "dullahan/internal/util/swagger" // Swagger stuffs
 )
@@ -50,12 +53,15 @@ func main() {
 	crypterSvc := crypter.New()
 	jwtSvc := jwt.New(cfg.JwtAlgorithm, cfg.JwtSecret, cfg.JwtDuration)
 
+	cache, _ := bigcache.New(context.Background(), bigcache.DefaultConfig(1*time.Minute))
+	defer cache.Reset()
+
 	authSvc := auth.New(dbSvc, jwtSvc, crypterSvc, cfg)
 
 	incomeSvc := income.New(dbSvc, rbacSvc, crypterSvc)
 	expenseSvc := expense.New(dbSvc, rbacSvc, crypterSvc)
 	debtSvc := debt.New(dbSvc, rbacSvc, crypterSvc)
-	sessionSvc := session.New(dbSvc, rbacSvc, crypterSvc)
+	sessionSvc := session.New(dbSvc, rbacSvc, crypterSvc, cache)
 
 	// * Initialize v1 API
 	v1Router := e.Group("/v1")

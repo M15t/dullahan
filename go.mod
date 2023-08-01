@@ -7,6 +7,7 @@ require (
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/aws/aws-lambda-go v1.40.0
 	github.com/go-gormigrate/gormigrate/v2 v2.0.2
+	github.com/golang-module/carbon/v2 v2.2.3
 	github.com/imdatngo/gowhere v1.1.3
 	github.com/jaevor/go-nanoid v1.3.0
 	github.com/labstack/echo/v4 v4.10.2

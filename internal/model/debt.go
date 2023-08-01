@@ -20,5 +20,7 @@ type Debt struct {
 	Type            string         `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
 	PaymentDeadline datatypes.Date `json:"payment_deadline"`
 
+	ForecastPaidOffDate string `json:"forecast_paid_off_date" gorm:"type:varchar(50)"`
+
 	Session *Session `json:"session,omitempty"`
 }

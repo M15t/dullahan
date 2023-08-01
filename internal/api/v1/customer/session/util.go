@@ -4,17 +4,14 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/golang-module/carbon/v2"
 )
 
 func generateQuarters(startDate, endDate time.Time) []int64 {
 	quarters := []int64{1}
 
 	diff := endDate.Sub(startDate)
-
-	// fmt.Println(start)
-	// fmt.Println(end)
-	// fmt.Printf("months: %f\n", diff.Hours()/24/30)
-	// fmt.Printf("quarters: %f\n", math.Round(diff.Hours()/24/30/3))
 
 	for i := 1; i < int(math.Round(diff.Hours()/24/30/3)); i++ {
 		quarters = append(quarters, int64(i*3))
@@ -62,11 +59,27 @@ func getQuarter(d time.Time, i int64) string {
 }
 
 func getMonth(d time.Time, i int64) string {
-	var year int
-	nextDate := d.AddDate(0, int(i), 0)
-	year = nextDate.Year()
+	c := carbon.FromStdTime(d)
+	c = c.SetDay(26)
 
-	return fmt.Sprintf("%d-%s", year%1e2, nextDate.Month().String()[0:3])
+	nextDate := c.AddMonths(int(i))
+	year := nextDate.Year()
+	month := nextDate.ToMonthString()[0:3]
+
+	// year%1e2
+
+	return fmt.Sprintf("%s-%d", month, year)
+}
+
+func getMonthAndYear(d time.Time, i int64) string {
+	c := carbon.FromStdTime(d)
+	c = c.SetDay(26)
+
+	nextDate := c.AddMonths(int(i))
+	year := nextDate.Year()
+	month := nextDate.ToMonthString()[0:3]
+
+	return fmt.Sprintf("%s %d", month, year)
 }
 
 func roundFloat(num float64) float64 {

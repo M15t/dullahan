@@ -116,7 +116,7 @@ type CreationData struct {
 	// example: ESSENTIAL
 	Type string `json:"type" validate:"required,oneof=ESSENTIAL NON_ESSENTIAL"`
 	// example: 300
-	Amount float64 `json:"amount" validate:"required,gte=0"`
+	Amount float64 `json:"amount" validate:"gte=0"`
 }
 
 // UpdateData contains expense data from json request

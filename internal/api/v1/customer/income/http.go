@@ -116,7 +116,7 @@ type CreationData struct {
 	// example: MONTHLY
 	Type string `json:"type" validate:"required,oneof=MONTHLY PASSIVE"`
 	// example: 2000
-	Amount float64 `json:"amount" validate:"required,gte=0"`
+	Amount float64 `json:"amount" validate:"gte=0"`
 }
 
 // UpdateData contains income data from json request
