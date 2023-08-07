@@ -67,7 +67,7 @@ func (s *Session) calculateSession(cache *bigcache.BigCache, session *model.Sess
 	session.TotalAllIncome = node.TotalAllIncome
 	session.TotalAllExpense = node.TotalAllExpense
 	session.TotalMonthlyPaymentDebt = node.TotalMonthlyPaymentDebt
-	session.MonthlyNetFlow = node.MonthlyNetFlow
+	session.MonthlyNetFlow = node.MonthlyNetFlow - node.TotalMonthlyPaymentDebt
 	session.ExpectedEmergencyFund = node.ExpectedEmergencyFund
 	session.ExpectedRainydayFund = node.ExpectedRainydayFund
 	session.ExpectedFunFund = node.ExpectFunFund
@@ -246,13 +246,14 @@ func (s *Session) generateDatasetWithDebt(cache *bigcache.BigCache, rec *model.S
 				totalRemainingAmount = prevDebtNode.RemainingAmount
 			}
 
+			// fmt.Println("test=====", getMonthAndYear(startDate, q), debt.ID, totalRemainingAmount, currentAsset-totalRemainingAmount, rec.TotalMonthlyPaymentDebt-debt.MonthlyPayment, eligiblePaidOff[j])
+
 			// * paid off
 			if totalRemainingAmount > 0 &&
 				currentAsset-totalRemainingAmount > 0 &&
-				currentAsset-totalRemainingAmount > rec.TotalMonthlyPaymentDebt-debt.MonthlyPayment &&
-				eligiblePaidOff[j] {
+				currentAsset-totalRemainingAmount > rec.TotalMonthlyPaymentDebt-debt.MonthlyPayment {
 
-				fmt.Println("paid off here", j, getMonthAndYear(startDate, q))
+				// fmt.Println("paid off here", j, getMonthAndYear(startDate, q))
 
 				currentAsset = currentAsset - totalRemainingAmount
 				currentRemainingDebt = 0
