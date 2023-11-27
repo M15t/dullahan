@@ -17,8 +17,7 @@ var (
 
 // Const
 const (
-	YearsForCalculation = 3
-	CustomYear          = 2033
+	YearsForCalculation = 5
 	CustomMonth         = 12
 	CustomDay           = 31
 
