@@ -1,22 +1,16 @@
-version: "3.8"
+version: "3"
 services:
   db:
-    image: mysql:8.0
-    container_name: dullahan.db
+    build:
+      context: ./docker/db
+      dockerfile: Dockerfile.mysql
+    container_name: dullahan-mysql-db
     ports:
       - "3312:3306"
-    command:
-      # - --initialize
-      - --default-authentication-plugin=mysql_native_password
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --character-set-client-handshake=OFF
-      - --innodb-file-per-table=ON
     environment:
+      # for root user. other users are created in provision script
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: dullahan
-      MYSQL_USER: dullahan
-      MYSQL_PASSWORD: dullahan123
+      MYSQL_DATABASE: maindb
       TZ: UTC
     volumes:
       - db-data:/var/lib/mysql

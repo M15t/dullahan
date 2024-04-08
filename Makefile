@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
-# HOST is only used for API specs generation
-HOST ?= localhost:8082
+# Default true if not set
+SWAGGER ?= true
 
 # Generates a help message. Borrowed from https://github.com/pydanny/cookiecutter-djangopackage.
 help: ## Display this help message
@@ -9,70 +9,58 @@ help: ## Display this help message
 	@perl -nle'print $& if m{^[\.a-zA-Z_-]+:.*?## .*$$}' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-25s\033[0m %s\n", $$1, $$2}'
 
 depends: ## Install & build dependencies
-	go get ./...
-	go build ./...
-	go mod tidy
+	go mod download
 
 provision: depends ## Provision dev environment
 	docker-compose up -d
 	sh scripts/waitdb.sh
-	@$(MAKE) migrate
+	@$(MAKE) migrate specs
 
-start: ## Bring up the server on dev environment
-	docker-compose up -d
+start: docker.up ## Bring up the server on dev environment
 	sh scripts/waitdb.sh
-	sh scripts/watcher.sh
+	air
 
-remove: ## Bring down the server on dev environment, remove all docker related stuffs as well
+docker.down: ## Bring down the server on dev environment, remove all docker related stuffs as well
 	docker-compose down -v --remove-orphans
 
-migrate.local: ## Run database migrations
-	go run cmd/migration/main.go
+docker.up: ## Bring up the docker container
+	docker-compose up -d
+
+migrate: ## Run database migrations
+	go run functions/migration/main.go
+
+migrate.atlas: ## Testing migration with atlas
+	atlas schema apply --env gorm -u "mysql://root:password@localhost:3306/maindb"
 
 migrate.undo: ## Undo the last database migration
-	go run cmd/migration/main.go --down
+	go run functions/migration/main.go --down
 
-seed: ## Run database seeder
-	echo "To be done!"
+seed: ## Run database migrations
+	go run functions/seed/main.go
 
 test: ## Run tests
-	sh scripts/test.sh
+	scripts/test.sh
 
 test.cover: test ## Run tests and open coverage statistics page
 	go tool cover -html=coverage-all.out
 
-build: clean ## Build the server binary file on host machine
-	sh scripts/build.sh
-
-build.linux: ## Build the server binary file for Linux host
-	@$(MAKE) GOOS=linux GOARCH=amd64 build
-
-build.windows: ## Build the server binary file for Windows host
-	@$(MAKE) GOOS=windows GOARCH=amd64 build
-
-build.arm: clean ## Build the server binary file for ARM host
-	GOOS=linux GOARCH=arm64 sh scripts/build-arm.sh
-
-build.func: ## Build the functions binary files on host machine
-	sh scripts/build-func.sh
-
-install:
-	echo "Not ready yet!"
-	echo "To setup PostgreSQL, check 'sh scripts/install-pg.sh'"
-	echo "To setup the server, check 'sh scripts/install-service.sh'"
-
 clean: ## Clean up the built & test files
-	rm -rf ./server ./bootstrap ./*.out
-	rm -rf .serverless
+	rm -rf deploy/.serverless
 
 specs: ## Generate swagger specs
-	HOST=$(HOST) sh scripts/specs-gen.sh
+	SWAGGER=$(SWAGGER) scripts/specs-gen.sh
 
-deployfunc:  ## Deploy functions to DEV environment with serverless
-	sh scripts/sls-funcs.sh dev deploy
+build.api: ## Build the api services
+	scripts/build-api.sh
 
-migrate: deployfunc ## Run database migrations on DEV environment
-	sh scripts/sls-funcs.sh dev invoke --function Migration
+build.funcs: ## Build the functions
+	scripts/build-funcs.sh
 
-deploy:  ## Deploy to DEV environment with serverless
-	sh scripts/sls.sh dev deploy --verbose
+build.api.lambda: ## Build the api services for AWS Lambda
+	@$(MAKE) TARGET=lambda build.api
+
+build.funcs.lambda: ## Build the functions for AWS Lambda
+	@$(MAKE) TARGET=lambda build.funcs
+
+deploy.dev: ## Deploy to DEV environment
+	aws-vault exec m15t-cave --no-session -- scripts/deploy.sh dev

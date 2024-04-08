@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"dullahan/config"
+	"embed"
+	"net/http"
 	"time"
 
 	"dullahan/internal/api/v1/auth"
@@ -18,8 +20,15 @@ import (
 	"github.com/M15t/ghoul/pkg/server"
 	"github.com/M15t/ghoul/pkg/server/middleware/jwt"
 	"github.com/allegro/bigcache/v3"
+	"github.com/labstack/echo/v4"
 
 	_ "dullahan/internal/util/swagger" // Swagger stuffs
+)
+
+// To embed SwaggerUI into api server using go:build tag
+var (
+	enableSwagger = false
+	swaggerui     embed.FS
 )
 
 func main() {
@@ -44,8 +53,18 @@ func main() {
 		Debug:        cfg.Debug,
 	})
 
+	// * Healcheck
+	e.GET("/", func(c echo.Context) error {
+		res := map[string]interface{}{"status": "ok"}
+
+		return c.JSON(http.StatusOK, res)
+	})
+
 	// * Static page for Swagger API specs
-	e.Static("/swaggerui", "swaggerui")
+	if enableSwagger {
+		// Static page for SwaggerUI
+		e.GET("/swagger-ui/*", echo.StaticDirectoryHandler(echo.MustSubFS(swaggerui, "swagger-ui"), false))
+	}
 
 	// * Initialize services
 	dbSvc := db.New(gdb)

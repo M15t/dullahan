@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  cmd = "go build -tags swagger  -o ./tmp/main ./cmd/api/"
   delay = 0
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
   exclude_file = []
@@ -33,12 +33,12 @@ tmp_dir = "tmp"
   watcher = "cyan"
 
 [log]
-  main_only = false
+  main_only = true
   time = false
 
 [misc]
-  clean_on_exit = false
+  clean_on_exit = true
 
 [screen]
-  clear_on_rebuild = false
-  keep_scroll = true
+  clear_on_rebuild = true
+  keep_scroll = false

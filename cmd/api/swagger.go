@@ -1,3 +1,5 @@
+//go:build swagger
+
 // Dullahan - Calculating personal finance
 //
 // # API documents for project
@@ -13,7 +15,6 @@
 //
 // Terms Of Service: N/A
 //
-// Host: %{HOST}
 // Version: 1.0.0
 // Contact: Nguyen Nguyen <khanhnguyen1411@gmail.com>
 //
@@ -34,3 +35,19 @@
 //
 // swagger:meta
 package main
+
+import (
+	"embed"
+)
+
+//go:embed swagger-ui
+var embedSwaggerui embed.FS
+
+func init() {
+	enableSwagger = true
+	swaggerui = embedSwaggerui
+}
+
+// OK - No Content
+// swagger:response ok
+type swaggOKResp struct{}

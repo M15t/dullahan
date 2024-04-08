@@ -1,0 +1,2 @@
+serverless › Invoking "invoke" on service "functions"
+functions › Running "serverless invoke --function=Migration --stage dev --region ap-southeast-1"
