@@ -18,7 +18,7 @@ type Debt struct {
 	MonthlyPayment  float64        `json:"monthly_payment"`
 	AnnualInterest  float64        `json:"annual_interest"`
 	Type            string         `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
-	PaymentDeadline datatypes.Date `json:"payment_deadline"`
+	PaymentDeadline datatypes.Date `json:"payment_deadline" gorm:"default:NULL"`
 
 	ForecastPaidOffDate string `json:"forecast_paid_off_date" gorm:"type:varchar(50)"`
 

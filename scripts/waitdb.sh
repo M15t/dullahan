@@ -6,7 +6,7 @@
 # Initialize sleep time.
 sleep_time=1
 
-until docker-compose exec db sh -c 'mysql -u root -p$MYSQL_ROOT_PASSWORD -D $MYSQL_DATABASE -e "SELECT 1"' &> /dev/null
+until docker compose exec db sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT 1"' &> /dev/null
 
 do
     # printf "."

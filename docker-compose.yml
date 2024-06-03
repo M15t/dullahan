@@ -3,17 +3,20 @@ services:
   db:
     build:
       context: ./docker/db
-      dockerfile: Dockerfile.mysql
-    container_name: dullahan-mysql-db
+      dockerfile: Dockerfile.postgres
+    container_name: dullahan-postgresql-db
     ports:
-      - "3312:3306"
+      - "5436:5432"
     environment:
-      # for root user. other users are created in provision script
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: maindb
+      POSTGRES_DB: ${DB_DATABASE:-maindb}
+      # Superuser creds, should be used by DBA only
+      # Application users are created in provision script
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       TZ: UTC
+      PGTZ: UTC
     volumes:
-      - db-data:/var/lib/mysql
+      - db-data:/var/lib/postgresql/data
 
 volumes:
   db-data:

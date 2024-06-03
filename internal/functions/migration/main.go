@@ -154,7 +154,7 @@ func Run() (respErr error) {
 		{
 			ID: "202305101555",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_all_expense DOUBLE DEFAULT 0 AFTER total_all_income;`).Error
+				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_all_expense DOUBLE PRECISION DEFAULT 0;`).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_all_expense;`).Error
@@ -165,7 +165,7 @@ func Run() (respErr error) {
 			ID: "202305111036",
 			Migrate: func(tx *gorm.DB) error {
 				changes := []string{
-					`ALTER TABLE sessions ADD COLUMN total_monthly_payment_debt DOUBLE DEFAULT 0 AFTER total_all_expense;`,
+					`ALTER TABLE sessions ADD COLUMN total_monthly_payment_debt DOUBLE PRECISION DEFAULT 0;`,
 					`ALTER TABLE sessions DROP COLUMN monthly_payment_debt;`,
 				}
 
@@ -173,7 +173,7 @@ func Run() (respErr error) {
 			},
 			Rollback: func(tx *gorm.DB) error {
 				changes := []string{
-					`ALTER TABLE sessions ADD COLUMN monthly_payment_debt DOUBLE DEFAULT 0;`,
+					`ALTER TABLE sessions ADD COLUMN monthly_payment_debt DOUBLE PRECISION DEFAULT 0;`,
 					`ALTER TABLE sessions DROP COLUMN total_monthly_payment_debt;`,
 				}
 
@@ -230,8 +230,8 @@ func Run() (respErr error) {
 			ID: "202307221532",
 			Migrate: func(tx *gorm.DB) error {
 				changes := []string{
-					`ALTER TABLE sessions ADD COLUMN expected_fun_fund DOUBLE DEFAULT 0 AFTER fun_fund;`,
-					`ALTER TABLE sessions CHANGE fun_fund actual_fun_fund DOUBLE DEFAULT 0;`,
+					`ALTER TABLE sessions ADD COLUMN expected_fun_fund DOUBLE PRECISION;`,
+					`ALTER TABLE sessions RENAME COLUMN fun_fund TO actual_fun_fund;`,
 				}
 
 				return migration.ExecMultiple(tx, strings.Join(changes, " "))
@@ -239,7 +239,7 @@ func Run() (respErr error) {
 			Rollback: func(tx *gorm.DB) error {
 				changes := []string{
 					`ALTER TABLE sessions DROP COLUMN expected_fun_fund;`,
-					`ALTER TABLE sessions CHANGER actual_fun_fund fun_fund DOUBLE DEFAULT 0;`,
+					`ALTER TABLE sessions RENAME COLUMN actual_fun_fund TO fun_fund;`,
 				}
 
 				return migration.ExecMultiple(tx, strings.Join(changes, " "))

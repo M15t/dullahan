@@ -14,8 +14,8 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	golang.org/x/crypto v0.23.0
 	gorm.io/datatypes v1.2.0
-	gorm.io/driver/sqlite v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/driver/postgres v1.5.7
+	gorm.io/gorm v1.25.9
 )
 
 require (
@@ -53,6 +53,6 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	gorm.io/driver/mysql v1.5.2 // indirect
-	gorm.io/driver/postgres v1.5.4 // indirect
+	gorm.io/driver/mysql v1.5.6 // indirect
+	gorm.io/driver/sqlite v1.5.5 // indirect
 )

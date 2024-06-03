@@ -27,16 +27,16 @@ docker.up: ## Bring up the docker container
 	docker-compose up -d
 
 migrate: ## Run database migrations
-	go run functions/migration/main.go
+	go run cmd/migration/main.go
 
 migrate.atlas: ## Testing migration with atlas
 	atlas schema apply --env gorm -u "mysql://root:password@localhost:3306/maindb"
 
 migrate.undo: ## Undo the last database migration
-	go run functions/migration/main.go --down
+	go run cmd/migration/main.go --down
 
 seed: ## Run database migrations
-	go run functions/seed/main.go
+	go run cmd/seed/main.go
 
 test: ## Run tests
 	scripts/test.sh
