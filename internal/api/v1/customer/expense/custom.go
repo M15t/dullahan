@@ -6,7 +6,7 @@ import (
 	"github.com/M15t/ghoul/pkg/server"
 )
 
-// custome error
+// Custom error
 var (
 	ErrExpenseNotFound = server.NewHTTPError(http.StatusBadRequest, "EXPENSE_NOTFOUND", "Expense not found")
 )

@@ -2,6 +2,7 @@ package migration
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"dullahan/config"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/M15t/ghoul/pkg/util/migration"
 	"github.com/go-gormigrate/gormigrate/v2"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -82,17 +84,26 @@ func Run() (respErr error) {
 					RefreshToken string     `json:"-" gorm:"type:varchar(100);unique_index"`
 					LastLogin    *time.Time `json:"last_login"`
 
-					TotalIncome              float64 `json:"total_income"`
+					TotalAllIncome           float64 `json:"total_all_income"`
 					TotalEssentialExpense    float64 `json:"total_essential_expense"`
 					TotalNonEssentialExpense float64 `json:"total_non_essential_expense"`
 					MonthlyPaymentDebt       float64 `json:"monthly_payment_debt"`
 					MonthlyNetFlow           float64 `json:"monthly_net_flow"`
 
-					EmergencyAchieved float64 `json:"emergency_achieved"`
-					RainyFundAchieved float64 `json:"rainy_fund_achieved"`
-					FunFund           float64 `json:"fun_fund"`
-					Investment        float64 `json:"investment"`
-					CurrentRetirement float64 `json:"current_retirement"`
+					CurrentBalance float64 `json:"current_balance"`
+
+					ActualEmergencyFund   float64 `json:"actual_emergency_fund"`
+					ExpectedEmergencyFund float64 `json:"expected_emergency_fund"`
+					ActualRainydayFund    float64 `json:"actual_rainyday_fund"`
+					ExpectedRainydayFund  float64 `json:"expected_rainyday_fund"`
+					FunFund               float64 `json:"fun_fund"`
+					Investment            float64 `json:"investment"`
+					RetirementPlan        float64 `json:"retirement_plan"`
+
+					IsAchivedEmergencyFund  bool `json:"is_achived_emergency_fund" gorm:"default:false"`
+					IsAchivedRainydayFund   bool `json:"is_achived_rainyday_fund" gorm:"default:false"`
+					IsAchivedInvestment     bool `json:"is_achived_investment" gorm:"default:false"`
+					IsAchivedRetirementPlan bool `json:"is_achived_retirement_plan" gorm:"default:false"`
 
 					Status string `json:"status" gorm:"type:varchar(10)"`
 				}
@@ -115,16 +126,13 @@ func Run() (respErr error) {
 
 				type Debt struct {
 					Base
-					SessionID       int64     `json:"session_id"`
-					Name            string    `json:"name" gorm:"type:varchar(50)"`
-					RemainingAmount float64   `json:"remaining_amount"`
-					MonthlyPayment  float64   `json:"monthly_payment"`
-					AnnualInterest  float64   `json:"annual_interest"`
-					Type            string    `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
-					PaymentDeadline time.Time `json:"payment_deadline"`
-
-					DebtPaidOffEachMonth     float64 `json:"debt_paid_off_each_month"`
-					InterestPaidOffEachMonth float64 `json:"interest_paid_off_each_month"`
+					SessionID       int64          `json:"session_id"`
+					Name            string         `json:"name" gorm:"type:varchar(50)"`
+					RemainingAmount float64        `json:"remaining_amount"`
+					MonthlyPayment  float64        `json:"monthly_payment"`
+					AnnualInterest  float64        `json:"annual_interest"`
+					Type            string         `json:"type" gorm:"type:varchar(10);default:FIXED"` // FIXED, FIXED_AMORTIZED, FLOAT, FLOAT_AMORTIZED
+					PaymentDeadline datatypes.Date `json:"payment_deadline"`
 				}
 
 				// Drop existing table if there is, in case re-apply this migration
@@ -142,14 +150,117 @@ func Run() (respErr error) {
 				return tx.Migrator().DropTable("sessions", "incomes", "expenses", "debts")
 			},
 		},
-		// add column "total_expense" to sessions table
+		// add column "total_all_expense" to sessions table
 		{
 			ID: "202305101555",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_expense DOUBLE DEFAULT 0 AFTER total_income;`).Error
+				return tx.Exec(`ALTER TABLE sessions ADD COLUMN total_all_expense DOUBLE PRECISION DEFAULT 0;`).Error
 			},
 			Rollback: func(tx *gorm.DB) error {
-				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_expense;`).Error
+				return tx.Exec(`ALTER TABLE sessions DROP COLUMN total_all_expense;`).Error
+			},
+		},
+		// add column "total_monthly_payment_debt" to sessions table
+		{
+			ID: "202305111036",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN total_monthly_payment_debt DOUBLE PRECISION DEFAULT 0;`,
+					`ALTER TABLE sessions DROP COLUMN monthly_payment_debt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN monthly_payment_debt DOUBLE PRECISION DEFAULT 0;`,
+					`ALTER TABLE sessions DROP COLUMN total_monthly_payment_debt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// add column "forecast_paid_off_date" to debts table
+		{
+			ID: "202307191521",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE debts ADD COLUMN forecast_paid_off_date VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE debts DROP COLUMN forecast_paid_off_date;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// add column "forecast_start_investing_date", "forecast_financial_freedom_date", "forecast_millionaire_date" to sessions table
+		// "forecast_emergency_budget_filled_date", "forecast_rainyday_budget_filled_date"
+		{
+			ID: "202307191630",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN forecast_emergency_budget_filled_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_rainyday_budget_filled_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_start_investing_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_financial_freedom_date VARCHAR(50);`,
+					`ALTER TABLE sessions ADD COLUMN forecast_millionaire_date VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN forecast_emergency_budget_filled_date,
+						DROP COLUMN forecast_rainyday_budget_filled_date,
+						DROP COLUMN forecast_start_investing_date,
+						DROP COLUMN forecast_financial_freedom_date,
+						DROP COLUMN forecast_millionaire_date;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// replace name fun_fund to actual_fun_fund, add column expected_fun_fund to sessions table
+		{
+			ID: "202307221532",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN expected_fun_fund DOUBLE PRECISION;`,
+					`ALTER TABLE sessions RENAME COLUMN fun_fund TO actual_fun_fund;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN expected_fun_fund;`,
+					`ALTER TABLE sessions RENAME COLUMN actual_fun_fund TO fun_fund;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+		},
+		// add "forecast_bankrupt" to sessions table
+		{
+			ID: "202307251001",
+			Migrate: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions ADD COLUMN forecast_bankrupt VARCHAR(50);`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
+			},
+			Rollback: func(tx *gorm.DB) error {
+				changes := []string{
+					`ALTER TABLE sessions DROP COLUMN forecast_bankrupt;`,
+				}
+
+				return migration.ExecMultiple(tx, strings.Join(changes, " "))
 			},
 		},
 	})

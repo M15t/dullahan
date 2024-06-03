@@ -19,3 +19,4 @@ test.go
 test_util.go
 node_modules
 serverless.*.yml
+/tmp

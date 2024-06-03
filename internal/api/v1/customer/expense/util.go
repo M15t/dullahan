@@ -2,8 +2,6 @@ package expense
 
 import (
 	"dullahan/internal/model"
-
-	"gorm.io/gorm"
 )
 
 func (s *Expense) calculateExpense(sessionID int64, dataType string) float64 {
@@ -15,10 +13,9 @@ func (s *Expense) calculateExpense(sessionID int64, dataType string) float64 {
 }
 
 func (s *Expense) updateCurrentSession(sessionID int64, dataType string) error {
-	newExpense := s.calculateExpense(sessionID, dataType)
-	updates := map[string]interface{}{
-		"total_expense": gorm.Expr("total_essential_expense + total_non_essential_expense"),
-	}
+	// * just recalculate the total of each type in sessions tbl
+	newExpense := s.cr.RoundFloat(s.calculateExpense(sessionID, dataType))
+	updates := map[string]interface{}{}
 
 	switch dataType {
 	case model.ExpenseTypeEssential:
@@ -26,6 +23,7 @@ func (s *Expense) updateCurrentSession(sessionID int64, dataType string) error {
 	default:
 		updates["total_non_essential_expense"] = newExpense
 	}
+
 	// * update session
 	return s.db.Session.Update(s.db.GDB, updates, sessionID)
 }

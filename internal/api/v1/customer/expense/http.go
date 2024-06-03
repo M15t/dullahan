@@ -26,7 +26,7 @@ type Service interface {
 func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	h := HTTP{svc, auth}
 
-	// swagger:operation POST /v1/customer/expense customer-expense customerExpenseCreate
+	// swagger:operation POST /v1/customer/expenses customer-expenses customerExpenseCreate
 	// ---
 	// summary: Creates new expense
 	// parameters:
@@ -51,7 +51,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.POST("", h.create)
 
-	// swagger:operation PATCH /v1/customer/expense/{id} customer-expense customerExpenseUpdate
+	// swagger:operation PATCH /v1/customer/expenses/{id} customer-expenses customerExpenseUpdate
 	// ---
 	// summary: Update expense information
 	// parameters:
@@ -83,7 +83,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.PATCH("/:id", h.update)
 
-	// swagger:operation DELETE /v1/customer/expense/{id} customer-expense customerExpenseDelete
+	// swagger:operation DELETE /v1/customer/expenses/{id} customer-expenses customerExpenseDelete
 	// ---
 	// summary: Deletes an expense
 	// parameters:
@@ -115,8 +115,8 @@ type CreationData struct {
 	Name string `json:"name" validate:"required,max=100"`
 	// example: ESSENTIAL
 	Type string `json:"type" validate:"required,oneof=ESSENTIAL NON_ESSENTIAL"`
-	// example: 2000
-	Amount float64 `json:"amount" validate:"required,gte=0"`
+	// example: 300
+	Amount float64 `json:"amount" validate:"gte=0"`
 }
 
 // UpdateData contains expense data from json request
@@ -126,7 +126,7 @@ type UpdateData struct {
 	Name *string `json:"name,omitempty" validate:"omitempty,max=100"`
 	// example: ESSENTIAL
 	Type *string `json:"type,omitempty" validate:"omitempty,oneof=ESSENTIAL NON_ESSENTIAL"`
-	// example: 2000
+	// example: 300
 	Amount *float64 `json:"amount,omitempty" validate:"omitempty,gte=0"`
 }
 

@@ -2,8 +2,9 @@ package model
 
 // RBAC roles
 const (
-	RoleAdmin    = "admin"
-	RoleCustomer = "customer"
+	RoleSuperAdmin = "superadmin"
+	RoleAdmin      = "admin"
+	RoleCustomer   = "customer"
 )
 
 // AvailableRoles for validation

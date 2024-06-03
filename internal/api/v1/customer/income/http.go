@@ -26,7 +26,7 @@ type Service interface {
 func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	h := HTTP{svc, auth}
 
-	// swagger:operation POST /v1/customer/income customer-income customerIncomeCreate
+	// swagger:operation POST /v1/customer/incomes customer-incomes customerIncomeCreate
 	// ---
 	// summary: Creates new income
 	// parameters:
@@ -51,7 +51,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.POST("", h.create)
 
-	// swagger:operation PATCH /v1/customer/income/{id} customer-income customerIncomeUpdate
+	// swagger:operation PATCH /v1/customer/incomes/{id} customer-incomes customerIncomeUpdate
 	// ---
 	// summary: Update income information
 	// parameters:
@@ -83,7 +83,7 @@ func NewHTTP(svc Service, auth model.Auth, eg *echo.Group) {
 	//     "$ref": "#/responses/errDetails"
 	eg.PATCH("/:id", h.update)
 
-	// swagger:operation DELETE /v1/customer/income/{id} customer-income customerIncomeDelete
+	// swagger:operation DELETE /v1/customer/incomes/{id} customer-incomes customerIncomeDelete
 	// ---
 	// summary: Deletes an income
 	// parameters:
@@ -116,7 +116,7 @@ type CreationData struct {
 	// example: MONTHLY
 	Type string `json:"type" validate:"required,oneof=MONTHLY PASSIVE"`
 	// example: 2000
-	Amount float64 `json:"amount" validate:"required,gte=0"`
+	Amount float64 `json:"amount" validate:"gte=0"`
 }
 
 // UpdateData contains income data from json request
